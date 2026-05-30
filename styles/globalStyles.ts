@@ -1,5 +1,6 @@
 import { StyleSheet } from "react-native";
 import { colors } from "./colors";
+import { fonts } from "./fonts";
 
 export const globalStyles = StyleSheet.create({
   logo: {
@@ -35,7 +36,7 @@ export const globalStyles = StyleSheet.create({
   },
 
   footerText: {
-    fontSize: 14,
+    fontSize: fonts.footerText,
     color: colors.black,
     fontWeight: "500",
   },
@@ -62,7 +63,7 @@ export const globalStyles = StyleSheet.create({
 
   buttonText: {
     color: colors.white,
-    fontSize: 20,
+    fontSize: fonts.buttonText,
     fontWeight: "700",
   },
 
@@ -89,7 +90,7 @@ export const globalStyles = StyleSheet.create({
   },
 
   menuIcon: {
-    fontSize: 32,
+    fontSize: fonts.menuIcon,
     color: colors.black,
   },
 
@@ -99,14 +100,14 @@ export const globalStyles = StyleSheet.create({
   },
 
   heroSubtitle: {
-    fontSize: 52,
+    fontSize: fonts.heroSubtitle,
     fontWeight: "300",
     color: colors.black,
     lineHeight: 58,
   },
 
   heroTitle: {
-    fontSize: 62,
+    fontSize: fonts.heroTitle,
     fontWeight: "800",
     color: colors.black,
     lineHeight: 68,
@@ -131,7 +132,7 @@ export const globalStyles = StyleSheet.create({
   },
 
   cardTitle: {
-    fontSize: 42,
+    fontSize: fonts.cardTitle,
     fontWeight: "800",
     marginBottom: 24,
   },
@@ -139,7 +140,7 @@ export const globalStyles = StyleSheet.create({
   label: {
     marginBottom: 10,
     color: colors.black,
-    fontSize: 16,
+    fontSize: fonts.label,
   },
 
   input: {
@@ -150,7 +151,7 @@ export const globalStyles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 18,
 
-    fontSize: 22,
+    fontSize: fonts.input,
 
     marginBottom: 28,
 
@@ -164,6 +165,6 @@ export const globalStyles = StyleSheet.create({
   helpText: {
     textAlign: "center",
     marginTop: 36,
-    fontSize: 16,
+    fontSize: fonts.helpText,
   },
 });
