@@ -2,6 +2,17 @@ import { StyleSheet } from "react-native";
 import { colors } from "./colors";
 
 export const globalStyles = StyleSheet.create({
+  logo: {
+    width: 120,
+    height: 50,
+    resizeMode: "contain",
+  },
+
+  safeContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -9,33 +20,150 @@ export const globalStyles = StyleSheet.create({
     alignItems: "center",
   },
 
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.35)",
+  },
+
   text: {
     color: colors.black,
   },
 
+  footer: {
+    marginTop: 30,
+    alignItems: "center",
+  },
+
+  footerText: {
+    fontSize: 14,
+    color: colors.black,
+    fontWeight: "500",
+  },
+
   button: {
     backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+
+    paddingVertical: 18,
+
+    borderRadius: 50,
 
     alignItems: "center",
-    justifyContent: "center",
 
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
 
-    elevation: 5,
+    elevation: 6,
   },
 
   buttonText: {
     color: colors.white,
+    fontSize: 20,
+    fontWeight: "700",
+  },
+
+  imageContainer: {
+    flex: 1,
+  },
+
+  image: {
+    width: 320,
+    height: 440,
+    borderRadius: 18,
+  },
+
+  backgroundImage: {
+    flex: 1,
+  },
+
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+
+  menuIcon: {
+    fontSize: 32,
+    color: colors.black,
+  },
+
+  heroContainer: {
+    paddingHorizontal: 30,
+    marginTop: 80,
+  },
+
+  heroSubtitle: {
+    fontSize: 52,
+    fontWeight: "300",
+    color: colors.black,
+    lineHeight: 58,
+  },
+
+  heroTitle: {
+    fontSize: 62,
+    fontWeight: "800",
+    color: colors.black,
+    lineHeight: 68,
+  },
+
+  card: {
+    marginTop: 40,
+    marginHorizontal: 20,
+    backgroundColor: "rgba(255,255,255,0.96)",
+    borderRadius: 32,
+    padding: 28,
+
+    shadowColor: colors.shadow,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+
+    elevation: 8,
+  },
+
+  cardTitle: {
+    fontSize: 42,
+    fontWeight: "800",
+    marginBottom: 24,
+  },
+
+  label: {
+    marginBottom: 10,
+    color: colors.black,
     fontSize: 16,
-    fontWeight: "600",
+  },
+
+  input: {
+    borderWidth: 1.5,
+    borderColor: colors.shadow,
+    borderRadius: 14,
+
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+
+    fontSize: 22,
+
+    marginBottom: 28,
+
+    backgroundColor: colors.white,
+  },
+
+  helpLink: {
+    color: colors.shadow,
+  },
+
+  helpText: {
+    textAlign: "center",
+    marginTop: 36,
+    fontSize: 16,
   },
 });

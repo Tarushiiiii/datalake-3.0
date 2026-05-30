@@ -1,16 +1,19 @@
-import { Text, TouchableOpacity, View } from "react-native";
+import { View, Text } from "react-native";
 import { globalStyles } from "../../styles/globalStyles";
-import { Link } from "expo-router";
+import { Image } from "expo-image";
 
 export default function Index() {
   return (
     <View style={globalStyles.container}>
-      <Text style={globalStyles.text}>Home Screen</Text>
-      <Link href="/about" asChild>
-        <TouchableOpacity style={globalStyles.button}>
-          <Text style={globalStyles.buttonText}>About</Text>
-        </TouchableOpacity>
-      </Link>
+      <View>
+        <Image
+          source={require("../../assets/images/main.jpg")}
+          style={globalStyles.backgroundImage}
+          contentFit="cover"
+        />
+      </View>
+
+      <Text style={globalStyles.text}>Hello, World!</Text>
     </View>
   );
 }
