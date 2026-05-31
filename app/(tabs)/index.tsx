@@ -14,7 +14,12 @@ export default function Index() {
     month: "short",
     day: "numeric",
   });
-  const isMarked = useAttendanceStore((state) => state.isMarked);
+
+  const isMarkedToday = useAttendanceStore((s) => s.isMarkedToday());
+  const isCheckedInToday = useAttendanceStore((s) => s.isCheckedInToday());
+  const checkOut = useAttendanceStore((s) => s.checkOut);
+  const weeklyCount = useAttendanceStore((s) => s.weeklyCount());
+  const weeklyHours = useAttendanceStore((s) => s.weeklyHours());
 
   return (
     <ScreenWrapper>
@@ -38,28 +43,43 @@ export default function Index() {
 
         {/* Status Block */}
         <View style={globalStyles.statusBlock}>
-          {isMarked ? (
+          {isMarkedToday ? (
             <>
-              <View
+              {isCheckedInToday ? (
+                <View
+                  style={[
+                    globalStyles.statusIconCircle,
+                    { backgroundColor: "#D4EDDA", borderColor: colors.success },
+                  ]}
+                >
+                  <Ionicons name="checkmark" size={32} color={colors.success} />
+                </View>
+              ) : (
+                <View
+                  style={[
+                    globalStyles.statusIconCircle,
+                    { backgroundColor: "#FFF3CD", borderColor: colors.warning },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="calendar-check-outline"
+                    size={32}
+                    color={colors.warning}
+                  />
+                </View>
+              )}
+              <Text
                 style={[
-                  globalStyles.statusIconCircle,
-                  { backgroundColor: "#D4EDDA", borderColor: colors.success },
+                  globalStyles.statusLabel,
+                  { color: isCheckedInToday ? colors.success : colors.warning },
                 ]}
               >
-                <Ionicons
-                  name="checkmark-circle-outline"
-                  size={58}
-                  color={colors.success}
-                  style={{ alignSelf: "center" }}
-                />
-              </View>
-              <Text
-                style={[globalStyles.statusLabel, { color: colors.success }]}
-              >
-                Marked
+                {isCheckedInToday ? "Checked In" : "Checked Out"}
               </Text>
               <Text style={globalStyles.statusDescription}>
-                Your attendance has been logged for today.
+                {isCheckedInToday
+                  ? "You are currently checked in at your site."
+                  : "You have checked out. Check in again if you've moved to another site."}
               </Text>
             </>
           ) : (
@@ -72,7 +92,7 @@ export default function Index() {
               >
                 <MaterialCommunityIcons
                   name="calendar-remove-outline"
-                  size={58}
+                  size={32}
                   color={colors.danger}
                 />
               </View>
@@ -108,34 +128,58 @@ export default function Index() {
         </View>
       </View>
 
-      {/* CTA Button */}
-      <TouchableOpacity
-        style={[
-          globalStyles.button,
-          { flexDirection: "row", justifyContent: "center" },
-        ]}
-        activeOpacity={0.85}
-        onPress={() => router.push("/attendance")}
-      >
-        <Ionicons
-          name="finger-print"
-          size={22}
-          color={colors.white}
-          style={{ marginRight: 10 }}
-        />
-        <Text style={globalStyles.buttonText}>Mark My Attendance</Text>
-      </TouchableOpacity>
+      {/* CTA Buttons */}
+      {!isCheckedInToday && (
+        <TouchableOpacity
+          style={[
+            globalStyles.button,
+            { flexDirection: "row", justifyContent: "center" },
+          ]}
+          activeOpacity={0.85}
+          onPress={() => router.push("/attendance")}
+        >
+          <Ionicons
+            name="finger-print"
+            size={22}
+            color={colors.white}
+            style={{ marginRight: 10 }}
+          />
+          <Text style={globalStyles.buttonText}>
+            {isMarkedToday ? "Mark Attendance (New Site)" : "Check In"}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {isCheckedInToday && (
+        <TouchableOpacity
+          style={[
+            globalStyles.button,
+            globalStyles.buttonDanger,
+            { flexDirection: "row", justifyContent: "center" },
+          ]}
+          activeOpacity={0.85}
+          onPress={checkOut}
+        >
+          <Ionicons
+            name="log-out-outline"
+            size={22}
+            color={colors.white}
+            style={{ marginRight: 10 }}
+          />
+          <Text style={globalStyles.buttonText}>Check Out</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Stats Row */}
       <View style={globalStyles.statsRow}>
         <View style={globalStyles.statCard}>
           <Text style={globalStyles.statLabel}>THIS WEEK</Text>
-          <Text style={globalStyles.statValue}>4 / 5</Text>
+          <Text style={globalStyles.statValue}>{weeklyCount} / 5</Text>
           <Text style={globalStyles.statSub}>Days Present</Text>
         </View>
         <View style={globalStyles.statCard}>
           <Text style={globalStyles.statLabel}>TOTAL HOURS</Text>
-          <Text style={globalStyles.statValue}>32.5</Text>
+          <Text style={globalStyles.statValue}>{weeklyHours}</Text>
           <Text style={globalStyles.statSub}>Working Hours</Text>
         </View>
       </View>

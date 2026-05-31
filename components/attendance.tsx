@@ -6,35 +6,46 @@ import { Alert, Text, TouchableOpacity } from "react-native";
 
 export default function Attendance() {
   const [loading, setLoading] = useState(false);
-  const markAttendance = useAttendanceStore((state) => state.markAttendance);
+  const checkIn = useAttendanceStore((s) => s.checkIn);
+  const checkOut = useAttendanceStore((s) => s.checkOut);
+  const isCheckedInToday = useAttendanceStore((s) => s.isCheckedInToday());
 
-  const handleMarkAttendance = async () => {
-    // ml integration will go here. For now, we simulate with a timeout.
-
+  const handleMark = async () => {
     try {
       setLoading(true);
 
-      // Simulated API delay
+      // Simulated API delay — replace with real ML/API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      markAttendance();
-      Alert.alert("Success", "Marked Attendance successfully.");
+      if (isCheckedInToday) {
+        checkOut();
+        Alert.alert("Checked Out", "Your hours have been logged.");
+      } else {
+        checkIn();
+        Alert.alert("Checked In", "Attendance marked successfully.");
+      }
+
       router.push("/(tabs)");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       Alert.alert("Error", "Something went wrong.");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <TouchableOpacity
       style={globalStyles.button}
-      onPress={handleMarkAttendance}
+      onPress={handleMark}
       disabled={loading}
     >
       <Text style={globalStyles.buttonText}>
-        {loading ? "Marking..." : "Mark Attendance"}
+        {loading
+          ? "Please wait..."
+          : isCheckedInToday
+            ? "Check Out"
+            : "Check In"}
       </Text>
     </TouchableOpacity>
   );

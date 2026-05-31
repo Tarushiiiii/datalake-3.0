@@ -133,7 +133,7 @@ export const globalStyles = StyleSheet.create({
   },
 
   card: {
-    marginTop: 12,
+    marginVertical: 12,
     backgroundColor: colors.white,
     borderRadius: 12,
     width: "100%",
