@@ -1,6 +1,5 @@
 import { Tabs } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
-
 import { tabScreenOptions } from "@/styles/navigation";
 
 export default function TabLayout() {
@@ -9,10 +8,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Attendance",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? "home-sharp" : "home-outline"}
+              name={focused ? "person-sharp" : "person-outline"}
               color={color}
               size={24}
             />
@@ -21,14 +20,40 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="about"
+        name="projects"
         options={{
-          title: "About",
+          title: "Projects",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={
-                focused ? "information-circle" : "information-circle-outline"
-              }
+              name={focused ? "briefcase-sharp" : "briefcase-outline"}
+              color={color}
+              size={24}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="reports"
+        options={{
+          title: "Reports",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "clipboard-sharp" : "clipboard-outline"}
+              color={color}
+              size={24}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="sync"
+        options={{
+          title: "Sync",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "refresh-sharp" : "refresh-outline"}
               color={color}
               size={24}
             />
