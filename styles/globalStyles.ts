@@ -38,12 +38,20 @@ export const globalStyles = StyleSheet.create({
     backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
-    margin: 12,
+  },
+
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
   },
 
   overlay: {
     flex: 1,
-    backgroundColor: colors.auxiliary,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    justifyContent: "center",
+    padding: 12,
   },
 
   text: {
@@ -159,7 +167,6 @@ export const globalStyles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 18,
     fontSize: fonts.input,
-    marginBottom: 28,
     backgroundColor: colors.white,
   },
 

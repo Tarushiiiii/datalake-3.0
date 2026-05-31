@@ -5,10 +5,10 @@ import { globalStyles } from "@/styles/globalStyles";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import ScreenWrapper from "@/components/ScreenWrapper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   ImageBackground,
@@ -26,6 +26,7 @@ export default function LoginScreen() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
   useEffect(() => {
     checkLogin();
   }, []);
@@ -33,13 +34,12 @@ export default function LoginScreen() {
   const checkLogin = async () => {
     try {
       const loggedIn = await AsyncStorage.getItem("isLoggedIn");
-
       if (loggedIn === "true") {
         // Already logged in — replace so back button cannot return here
         router.replace("/(tabs)");
       }
     } catch (error) {
-      console.log("Error checking login status:", error);
+      console.error("Error checking login status:", error);
     } finally {
       setIsCheckingAuth(false);
     }
@@ -57,9 +57,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
 
-      console.log("Sending OTP to:", phone);
-
-      // Simulated API delay
+      // Simulated API delay — replace with real OTP request
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       Alert.alert("Success", "OTP sent successfully.");
@@ -71,8 +69,7 @@ export default function LoginScreen() {
         params: { phone },
       });
     } catch (error) {
-      console.log(error);
-
+      console.error(error);
       Alert.alert("Error", "Something went wrong.");
     } finally {
       setLoading(false);
@@ -80,11 +77,17 @@ export default function LoginScreen() {
   };
 
   if (isCheckingAuth) {
-    return null;
+    return (
+      <View
+        style={[globalStyles.container, { backgroundColor: colors.background }]}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   return (
-    <ScreenWrapper>
+    <>
       <StatusBar barStyle="dark-content" />
 
       <ImageBackground
@@ -93,7 +96,7 @@ export default function LoginScreen() {
         style={globalStyles.backgroundImage}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{ flex: 1 }}
         >
           <ScrollView
@@ -107,9 +110,8 @@ export default function LoginScreen() {
               <View style={globalStyles.header}>
                 <Image
                   source={require("../../assets/images/mrth.png")}
-                  style={{ width: 120, height: 50, resizeMode: "contain" }}
+                  style={globalStyles.logo}
                 />
-
                 <TouchableOpacity style={{ padding: 6 }}>
                   <Ionicons name="menu" size={34} color={colors.black} />
                 </TouchableOpacity>
@@ -118,7 +120,6 @@ export default function LoginScreen() {
               {/* HERO SECTION */}
               <View style={globalStyles.heroContainer}>
                 <Text style={globalStyles.heroSubtitle}>Welcome to</Text>
-
                 <Text style={globalStyles.heroTitle}>DataLake 3.0</Text>
               </View>
 
@@ -168,6 +169,6 @@ export default function LoginScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </ImageBackground>
-    </ScreenWrapper>
+    </>
   );
 }

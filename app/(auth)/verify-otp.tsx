@@ -1,3 +1,4 @@
+import { colors } from "@/styles/colors";
 import { globalStyles } from "@/styles/globalStyles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
@@ -31,7 +32,7 @@ export default function VerifyOTPScreen() {
     try {
       setLoading(true);
 
-      // Simulated API delay
+      // Simulated API delay — replace with real OTP verification
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       await AsyncStorage.setItem("isLoggedIn", "true");
@@ -39,11 +40,9 @@ export default function VerifyOTPScreen() {
       Alert.alert("Success", "OTP verified successfully.");
 
       // [AUTH FLOW] Use replace() so OTP screen is removed from the stack.
-      // The user cannot press back from tabs to return to OTP screen.
       router.replace("/(tabs)");
     } catch (error) {
-      console.log(error);
-
+      console.error(error);
       Alert.alert("Error", "Something went wrong.");
     } finally {
       setLoading(false);
@@ -51,49 +50,66 @@ export default function VerifyOTPScreen() {
   };
 
   return (
-    <View style={globalStyles.card}>
-      <Text style={globalStyles.cardTitle}>Enter OTP</Text>
+    <>
+      <View style={globalStyles.container}>
+        <View style={globalStyles.card}>
+          {/* Card Header */}
+          <View style={globalStyles.cardHeader}>
+            <Text style={globalStyles.cardTitle}>Enter OTP</Text>
+          </View>
 
-      <View
-        style={[
-          globalStyles.container,
-          { flexDirection: "row", justifyContent: "space-between" },
-        ]}
-      >
-        {otp.map((digit, index) => (
-          <TextInput
-            key={index}
-            ref={(ref) => {
-              inputs.current[index] = ref;
+          <Text style={globalStyles.statusDescription}>
+            OTP sent to{" "}
+            <Text style={{ fontWeight: "700", color: colors.auxiliary2 }}>
+              +91 {phone}
+            </Text>
+          </Text>
+
+          {/* OTP Inputs */}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginVertical: 24,
             }}
-            value={digit}
-            onChangeText={(text) => {
-              handleChange(text, index);
-            }}
-            keyboardType="number-pad"
-            maxLength={1}
-            style={globalStyles.otpInput}
-          />
-        ))}
+          >
+            {otp.map((digit, index) => (
+              <TextInput
+                key={index}
+                ref={(ref) => {
+                  inputs.current[index] = ref;
+                }}
+                value={digit}
+                onChangeText={(text) => handleChange(text, index)}
+                keyboardType="number-pad"
+                maxLength={1}
+                style={globalStyles.otpInput}
+              />
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={globalStyles.button}
+            onPress={verifyOTP}
+            disabled={loading}
+          >
+            <Text style={globalStyles.buttonText}>
+              {loading ? "Verifying..." : "Verify OTP"}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={globalStyles.footer}>
+            <Text style={globalStyles.footerText}>
+              Didn't receive the OTP?{" "}
+            </Text>
+            <TouchableOpacity
+              onPress={() => console.log("Resend OTP to", phone)}
+            >
+              <Text style={globalStyles.helpLink}>Resend OTP</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
-
-      <TouchableOpacity
-        style={globalStyles.button}
-        onPress={verifyOTP}
-        disabled={loading}
-      >
-        <Text style={globalStyles.buttonText}>
-          {loading ? "Verifying..." : "Verify"}
-        </Text>
-      </TouchableOpacity>
-
-      <View style={globalStyles.footer}>
-        <Text>Didn't receive the OTP? </Text>
-
-        <TouchableOpacity onPress={() => console.log("Resend OTP to", phone)}>
-          <Text style={globalStyles.helpLink}>Resend OTP</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </>
   );
 }

@@ -1,11 +1,11 @@
-import { tabScreenOptions } from "@/styles/navigation";
+import { stackScreenOptions } from "@/styles/navigation";
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <Stack screenOptions={{ ...tabScreenOptions }}>
+      <Stack screenOptions={{ ...stackScreenOptions }}>
         <Stack.Screen name="(auth)/index" options={{ headerShown: false }} />
         <Stack.Screen
           name="(auth)/verify-otp"
