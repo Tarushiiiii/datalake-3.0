@@ -22,7 +22,7 @@ import {
   View,
 } from "react-native";
 
-export default function HomeScreen() {
+export default function LoginScreen() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -35,6 +35,7 @@ export default function HomeScreen() {
       const loggedIn = await AsyncStorage.getItem("isLoggedIn");
 
       if (loggedIn === "true") {
+        // Already logged in — replace so back button cannot return here
         router.replace("/(tabs)");
       }
     } catch (error) {
@@ -63,9 +64,10 @@ export default function HomeScreen() {
 
       Alert.alert("Success", "OTP sent successfully.");
 
-      // Navigate to OTP screen later
-      router.push({
-        pathname: "/verify-otp",
+      // [AUTH FLOW] Use replace() so Login screen is removed from the stack.
+      // The user cannot press back from OTP screen to return to Login.
+      router.replace({
+        pathname: "/(auth)/verify-otp",
         params: { phone },
       });
     } catch (error) {
@@ -86,7 +88,7 @@ export default function HomeScreen() {
       <StatusBar barStyle="dark-content" />
 
       <ImageBackground
-        source={require("../assets/images/main.jpg")}
+        source={require("../../assets/images/main.jpg")}
         resizeMode="cover"
         style={globalStyles.backgroundImage}
       >
@@ -104,7 +106,7 @@ export default function HomeScreen() {
               {/* HEADER */}
               <View style={globalStyles.header}>
                 <Image
-                  source={require("../assets/images/mrth.png")}
+                  source={require("../../assets/images/mrth.png")}
                   style={{ width: 120, height: 50, resizeMode: "contain" }}
                 />
 
@@ -157,7 +159,7 @@ export default function HomeScreen() {
                 <View style={globalStyles.footer}>
                   <Text style={globalStyles.footerText}>powered by </Text>
                   <Image
-                    source={require("../assets/images/dic.png")}
+                    source={require("../../assets/images/dic.png")}
                     style={{ width: 100, height: 40, resizeMode: "contain" }}
                   />
                 </View>

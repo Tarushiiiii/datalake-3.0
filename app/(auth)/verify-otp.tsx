@@ -38,7 +38,8 @@ export default function VerifyOTPScreen() {
 
       Alert.alert("Success", "OTP verified successfully.");
 
-      // Navigate to OTP screen later
+      // [AUTH FLOW] Use replace() so OTP screen is removed from the stack.
+      // The user cannot press back from tabs to return to OTP screen.
       router.replace("/(tabs)");
     } catch (error) {
       console.log(error);

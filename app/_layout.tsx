@@ -1,15 +1,12 @@
 import { Stack } from "expo-router";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView } from "react-native";
-
-import { globalStyles } from "@/styles/globalStyles";
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={globalStyles.safeContainer}>
-        <Stack screenOptions={{ headerShown: false }} />
-      </SafeAreaView>
-    </SafeAreaProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* Auth screens are grouped; each uses replace() so they don't stack */}
+      <Stack.Screen name="(auth)/index" />
+      <Stack.Screen name="(auth)/verify-otp" />
+      <Stack.Screen name="(tabs)" />
+    </Stack>
   );
 }
