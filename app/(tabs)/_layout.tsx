@@ -1,10 +1,21 @@
-import { Tabs } from "expo-router";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { tabScreenOptions } from "@/styles/navigation";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { router, Tabs } from "expo-router";
+import { TouchableOpacity } from "react-native";
 
 export default function TabLayout() {
   return (
-    <Tabs screenOptions={tabScreenOptions}>
+    <Tabs
+      screenOptions={{
+        ...tabScreenOptions,
+
+        headerRight: () => (
+          <TouchableOpacity onPress={() => router.push("/profile")}>
+            <Ionicons name="person-circle-outline" size={32} color="white" />
+          </TouchableOpacity>
+        ),
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
