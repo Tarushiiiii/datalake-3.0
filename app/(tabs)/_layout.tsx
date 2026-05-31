@@ -1,4 +1,5 @@
 import { tabScreenOptions } from "@/styles/navigation";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Tabs } from "expo-router";
 import { TouchableOpacity } from "react-native";
@@ -71,10 +72,10 @@ export default function TabLayout() {
         options={{
           title: "Sync",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "refresh-sharp" : "refresh-outline"}
-              color={color}
+            <MaterialCommunityIcons
+              name={focused ? "cloud-sync" : "cloud-sync-outline"}
               size={24}
+              color={color}
             />
           ),
         }}

@@ -73,7 +73,7 @@ export const globalStyles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 6,
-    marginTop: 20,
+    marginVertical: 20,
   },
 
   buttonDanger: {
@@ -133,7 +133,7 @@ export const globalStyles = StyleSheet.create({
   },
 
   card: {
-    marginTop: 40,
+    marginTop: 12,
     backgroundColor: colors.white,
     borderRadius: 12,
     width: "100%",
@@ -144,7 +144,6 @@ export const globalStyles = StyleSheet.create({
   cardTitle: {
     fontSize: fonts.cardTitle,
     fontWeight: "800",
-    marginBottom: 24,
   },
 
   label: {
@@ -259,12 +258,6 @@ export const globalStyles = StyleSheet.create({
   },
 
   // Main card
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
 
   cardDate: {
     fontSize: fonts.sm,

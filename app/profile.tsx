@@ -1,3 +1,4 @@
+import ProfileHeader from "@/components/profileHeader";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { globalStyles } from "@/styles/globalStyles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -35,10 +36,7 @@ export default function Profile() {
 
   return (
     <ScreenWrapper>
-      <Text style={globalStyles.text}>
-        This is the profile screen. User details and settings will be shown
-        here.
-      </Text>
+      <ProfileHeader />
       <TouchableOpacity
         onPress={handleLogout}
         style={[globalStyles.button, globalStyles.buttonDanger]}

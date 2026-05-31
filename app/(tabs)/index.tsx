@@ -1,8 +1,9 @@
+import ProfileHeader from "@/components/profileHeader";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { useAttendanceStore } from "@/store/attendanceStore";
 import { colors } from "@/styles/colors";
 import { globalStyles } from "@/styles/globalStyles";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { router } from "expo-router";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
@@ -13,7 +14,7 @@ export default function Index() {
     month: "short",
     day: "numeric",
   });
-  const isMarked = false;
+  const isMarked = useAttendanceStore((state) => state.isMarked);
 
   return (
     <ScreenWrapper>
@@ -22,44 +23,18 @@ export default function Index() {
         <MaterialCommunityIcons
           name="cloud-sync-outline"
           size={16}
-          color="#fff"
+          color={colors.white}
         />
         <Text style={globalStyles.syncText}>Sync Status: Up to date</Text>
       </View>
 
       {/* Profile Header */}
-      <TouchableOpacity
-        style={globalStyles.profileCard}
-        onPress={() => router.push("/profile")}
-      >
-        <View style={globalStyles.profileLeft}>
-          <Image
-            source={{ uri: "https://i.pravatar.cc/80?img=11" }}
-            style={globalStyles.avatar}
-            contentFit="cover"
-          />
-          <View style={globalStyles.profileInfo}>
-            <Text style={globalStyles.profileName}>Rahul Sharma</Text>
-            <Text style={globalStyles.profileRole}>
-              Field Inspector, Zone A
-            </Text>
-            <Text style={globalStyles.profileId}>ID: EMP-8472-MX</Text>
-          </View>
-        </View>
-        <TouchableOpacity
-          style={globalStyles.qrButton}
-          accessibilityLabel="Show QR code"
-        >
-          <MaterialCommunityIcons name="qrcode" size={26} color="#333" />
-        </TouchableOpacity>
-      </TouchableOpacity>
+      <ProfileHeader />
 
       {/* Attendance Card */}
       <View style={globalStyles.card}>
-        <View style={globalStyles.cardHeader}>
-          <Text style={globalStyles.cardTitle}>TODAY'S ATTENDANCE</Text>
-          <Text style={globalStyles.cardDate}>{today}</Text>
-        </View>
+        <Text style={globalStyles.cardTitle}>Today's Attendance</Text>
+        <Text style={globalStyles.cardDate}>{today}</Text>
 
         {/* Status Block */}
         <View style={globalStyles.statusBlock}>
@@ -71,7 +46,12 @@ export default function Index() {
                   { backgroundColor: "#D4EDDA", borderColor: colors.success },
                 ]}
               >
-                <Ionicons name="checkmark" size={32} color={colors.success} />
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={58}
+                  color={colors.success}
+                  style={{ alignSelf: "center" }}
+                />
               </View>
               <Text
                 style={[globalStyles.statusLabel, { color: colors.success }]}
@@ -92,7 +72,7 @@ export default function Index() {
               >
                 <MaterialCommunityIcons
                   name="calendar-remove-outline"
-                  size={32}
+                  size={58}
                   color={colors.danger}
                 />
               </View>
@@ -114,7 +94,7 @@ export default function Index() {
           <Ionicons
             name="navigate-outline"
             size={18}
-            color="#555"
+            color={colors.auxiliary2}
             style={{ marginRight: 8 }}
           />
           <View>
