@@ -149,14 +149,10 @@ export const globalStyles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.shadow,
     borderRadius: 14,
-
     paddingVertical: 18,
     paddingHorizontal: 18,
-
     fontSize: fonts.input,
-
     marginBottom: 28,
-
     backgroundColor: colors.white,
   },
 
@@ -167,6 +163,24 @@ export const globalStyles = StyleSheet.create({
   helpText: {
     textAlign: "center",
     marginTop: 36,
+    fontSize: fonts.helpText,
+  },
+
+  otpContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10, // optional spacing
+    marginVertical: 20,
+  },
+
+  otpInput: {
+    width: 60,
+    height: 60,
+    borderWidth: 1,
+    borderColor: colors.shadow,
+    borderRadius: 10,
+    textAlign: "center",
     fontSize: fonts.helpText,
   },
 });

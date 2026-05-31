@@ -1,25 +1,25 @@
 import { useState } from "react";
 
-import { globalStyles } from "@/styles/globalStyles";
 import { colors } from "@/styles/colors";
+import { globalStyles } from "@/styles/globalStyles";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
 
+import ScreenWrapper from "@/components/ScreenWrapper";
+import { router } from "expo-router";
 import {
-  View,
+  Alert,
+  Image,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
-  ImageBackground,
-  StatusBar,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
+  View,
 } from "react-native";
-import ScreenWrapper from "@/components/ScreenWrapper";
-import { router } from "expo-router";
 
 export default function HomeScreen() {
   const [phone, setPhone] = useState("");
@@ -44,10 +44,8 @@ export default function HomeScreen() {
 
       Alert.alert("Success", "OTP sent successfully.");
 
-      router.push("/(tabs)");
-
       // Navigate to OTP screen later
-      // router.push("/verify-otp");
+      router.push("/verify-otp");
     } catch (error) {
       console.log(error);
 
