@@ -1,13 +1,11 @@
-import { Text, View } from "react-native";
-import { globalStyles } from "../../styles/globalStyles";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { Text } from "react-native";
+import { globalStyles } from "../../styles/globalStyles";
 
 export default function Projects() {
   return (
     <ScreenWrapper>
-      <View style={globalStyles.container}>
-        <Text style={globalStyles.text}>Projects screen</Text>
-      </View>
+      <Text style={globalStyles.text}>Projects screen</Text>
     </ScreenWrapper>
   );
 }

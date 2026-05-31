@@ -1,29 +1,22 @@
-// export default function Index() {
-//   return (
-//     <ScreenWrapper>
-//       <View style={globalglobalStyles.container}>
-//         <Text style={globalglobalStyles.text}>Hello, World!</Text>
-//       </View>
-//     </ScreenWrapper>
-//   );
-// }
-
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { colors } from "@/styles/colors";
 import { globalStyles } from "@/styles/globalStyles";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import React from "react";
-import { StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 export default function Index() {
-  const today = "Oct 24, 2023";
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
   const isMarked = false;
 
   return (
     <ScreenWrapper>
-      <StatusBar barStyle="light-content" backgroundColor="#1A3C2E" />
-
       {/* Top sync banner */}
       <View style={globalStyles.syncBanner}>
         <MaterialCommunityIcons
@@ -38,7 +31,6 @@ export default function Index() {
       <TouchableOpacity
         style={globalStyles.profileCard}
         onPress={() => router.push("/profile")}
-        activeOpacity={0.8}
       >
         <View style={globalStyles.profileLeft}>
           <Image
@@ -76,16 +68,13 @@ export default function Index() {
               <View
                 style={[
                   globalStyles.statusIconCircle,
-                  globalStyles.statusIconSuccess,
+                  { backgroundColor: "#D4EDDA", borderColor: colors.success },
                 ]}
               >
-                <Ionicons name="checkmark" size={32} color="#1A6B3C" />
+                <Ionicons name="checkmark" size={32} color={colors.success} />
               </View>
               <Text
-                style={[
-                  globalStyles.statusLabel,
-                  globalStyles.statusLabelSuccess,
-                ]}
+                style={[globalStyles.statusLabel, { color: colors.success }]}
               >
                 Marked
               </Text>
@@ -98,20 +87,17 @@ export default function Index() {
               <View
                 style={[
                   globalStyles.statusIconCircle,
-                  globalStyles.statusIconDanger,
+                  { backgroundColor: "#F8D7DA", borderColor: colors.danger },
                 ]}
               >
                 <MaterialCommunityIcons
                   name="calendar-remove-outline"
                   size={32}
-                  color="#C0392B"
+                  color={colors.danger}
                 />
               </View>
               <Text
-                style={[
-                  globalStyles.statusLabel,
-                  globalStyles.statusLabelDanger,
-                ]}
+                style={[globalStyles.statusLabel, { color: colors.danger }]}
               >
                 Not Marked
               </Text>
@@ -144,18 +130,20 @@ export default function Index() {
 
       {/* CTA Button */}
       <TouchableOpacity
-        style={globalStyles.ctaButton}
+        style={[
+          globalStyles.button,
+          { flexDirection: "row", justifyContent: "center" },
+        ]}
         activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel="Mark My Attendance"
+        onPress={() => router.push("/attendance")}
       >
         <Ionicons
           name="finger-print"
           size={22}
-          color="#fff"
+          color={colors.white}
           style={{ marginRight: 10 }}
         />
-        <Text style={globalStyles.ctaText}>Mark My Attendance</Text>
+        <Text style={globalStyles.buttonText}>Mark My Attendance</Text>
       </TouchableOpacity>
 
       {/* Stats Row */}
@@ -165,7 +153,7 @@ export default function Index() {
           <Text style={globalStyles.statValue}>4 / 5</Text>
           <Text style={globalStyles.statSub}>Days Present</Text>
         </View>
-        <View style={[globalStyles.statCard, globalStyles.statCardRight]}>
+        <View style={globalStyles.statCard}>
           <Text style={globalStyles.statLabel}>TOTAL HOURS</Text>
           <Text style={globalStyles.statValue}>32.5</Text>
           <Text style={globalStyles.statSub}>Working Hours</Text>

@@ -2,6 +2,24 @@ import { StyleSheet } from "react-native";
 import { colors } from "./colors";
 import { fonts } from "./fonts";
 
+// Reusable shadow style — apply via spread: { ...shadowStyle }
+const shadowStyle = {
+  shadowColor: colors.shadow,
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 10,
+  elevation: 8,
+};
+
+// Lighter shadow for cards/stat blocks
+const shadowStyleSm = {
+  shadowColor: colors.shadow,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 4,
+  elevation: 1,
+};
+
 export const globalStyles = StyleSheet.create({
   logo: {
     width: 120,
@@ -12,6 +30,7 @@ export const globalStyles = StyleSheet.create({
   safeContainer: {
     flex: 1,
     backgroundColor: colors.background,
+    padding: 12,
   },
 
   container: {
@@ -19,11 +38,12 @@ export const globalStyles = StyleSheet.create({
     backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
+    margin: 12,
   },
 
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.35)",
+    backgroundColor: colors.auxiliary,
   },
 
   text: {
@@ -43,19 +63,21 @@ export const globalStyles = StyleSheet.create({
     fontWeight: "500",
   },
 
+  // Base button — override backgroundColor per variant
   button: {
     backgroundColor: colors.primary,
-    paddingVertical: 18,
+    padding: 18,
     borderRadius: 50,
     alignItems: "center",
-    shadowColor: colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    ...shadowStyle,
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 6,
+    marginTop: 20,
+  },
+
+  buttonDanger: {
+    backgroundColor: colors.danger,
   },
 
   buttonText: {
@@ -112,18 +134,11 @@ export const globalStyles = StyleSheet.create({
 
   card: {
     marginTop: 40,
-    marginHorizontal: 20,
-    backgroundColor: "rgba(255,255,255,0.96)",
-    borderRadius: 32,
-    padding: 28,
-    shadowColor: colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    width: "100%",
+    padding: 14,
+    ...shadowStyleSm,
   },
 
   cardTitle: {
@@ -159,14 +174,6 @@ export const globalStyles = StyleSheet.create({
     fontSize: fonts.helpText,
   },
 
-  otpContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10, // optional spacing
-    marginVertical: 20,
-  },
-
   otpInput: {
     width: 60,
     height: 60,
@@ -178,18 +185,22 @@ export const globalStyles = StyleSheet.create({
   },
 
   syncBanner: {
-    backgroundColor: "#1A3C2E",
+    backgroundColor: colors.sync,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
     gap: 6,
+    borderRadius: 8,
+    marginBottom: 16,
   },
+
   syncText: {
-    color: "#fff",
-    fontSize: 13,
+    color: colors.white,
+    fontSize: fonts.sm,
     fontWeight: "500",
   },
+
   scrollContent: {
     padding: 16,
     paddingBottom: 32,
@@ -198,50 +209,53 @@ export const globalStyles = StyleSheet.create({
 
   // Profile
   profileCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
     borderRadius: 12,
     padding: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    ...shadowStyleSm,
   },
+
   profileLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
+
   avatar: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: "#ddd",
+    backgroundColor: colors.shadow,
   },
+
   profileInfo: {
     gap: 2,
   },
+
   profileName: {
-    fontSize: 16,
+    fontSize: fonts.normal,
     fontWeight: "700",
-    color: "#1A1A1A",
+    color: colors.auxiliary2,
   },
+
   profileRole: {
-    fontSize: 13,
-    color: "#555",
+    fontSize: fonts.sm,
+    color: colors.auxiliary,
   },
+
   profileId: {
-    fontSize: 12,
-    color: "#888",
+    fontSize: fonts.xs,
+    color: colors.auxiliary,
   },
+
   qrButton: {
     padding: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: colors.shadow,
   },
 
   // Main card
@@ -253,8 +267,8 @@ export const globalStyles = StyleSheet.create({
   },
 
   cardDate: {
-    fontSize: 13,
-    color: "#777",
+    fontSize: fonts.sm,
+    color: colors.auxiliary,
   },
 
   // Status
@@ -263,6 +277,7 @@ export const globalStyles = StyleSheet.create({
     paddingVertical: 12,
     gap: 8,
   },
+
   statusIconCircle: {
     width: 72,
     height: 72,
@@ -271,25 +286,15 @@ export const globalStyles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 4,
   },
-  statusIconDanger: {
-    backgroundColor: "#FDECEA",
-  },
-  statusIconSuccess: {
-    backgroundColor: "#E8F5EE",
-  },
+
   statusLabel: {
-    fontSize: 20,
+    fontSize: fonts.mainLabel,
     fontWeight: "700",
   },
-  statusLabelDanger: {
-    color: "#C0392B",
-  },
-  statusLabelSuccess: {
-    color: "#1A6B3C",
-  },
+
   statusDescription: {
-    fontSize: 13,
-    color: "#666",
+    fontSize: fonts.sm,
+    color: colors.auxiliary,
     textAlign: "center",
     lineHeight: 19,
     paddingHorizontal: 8,
@@ -302,37 +307,24 @@ export const globalStyles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
-  },
-  siteName: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#333",
-  },
-  gpsAccuracy: {
-    fontSize: 12,
-    color: "#888",
-    marginTop: 2,
-  },
-  gpsHigh: {
-    color: "#1A8A4A",
-    fontWeight: "600",
+    borderTopColor: colors.shadow,
   },
 
-  // CTA
-  ctaButton: {
-    backgroundColor: "#1A2A4A",
-    borderRadius: 14,
-    paddingVertical: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+  siteName: {
+    fontSize: fonts.sm,
+    fontWeight: "600",
+    color: colors.auxiliary2,
   },
-  ctaText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-    letterSpacing: 0.3,
+
+  gpsAccuracy: {
+    fontSize: fonts.xs,
+    color: colors.auxiliary,
+    marginTop: 2,
+  },
+
+  gpsHigh: {
+    color: colors.success,
+    fontWeight: "600",
   },
 
   // Stats
@@ -340,34 +332,33 @@ export const globalStyles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
   },
+
   statCard: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.white,
     borderRadius: 12,
     padding: 14,
     alignItems: "center",
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    ...shadowStyleSm,
   },
-  statCardRight: {},
+
   statLabel: {
-    fontSize: 11,
-    color: "#999",
+    fontSize: fonts.xs,
+    color: colors.auxiliary,
     fontWeight: "600",
     letterSpacing: 0.5,
     marginBottom: 4,
   },
+
   statValue: {
-    fontSize: 22,
+    fontSize: fonts.mainLabel2,
     fontWeight: "800",
-    color: "#1A1A1A",
+    color: colors.auxiliary2,
   },
+
   statSub: {
-    fontSize: 12,
-    color: "#888",
+    fontSize: fonts.xs,
+    color: colors.auxiliary,
     marginTop: 2,
   },
 });

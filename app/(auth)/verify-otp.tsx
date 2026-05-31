@@ -54,7 +54,12 @@ export default function VerifyOTPScreen() {
     <View style={globalStyles.card}>
       <Text style={globalStyles.cardTitle}>Enter OTP</Text>
 
-      <View style={globalStyles.otpContainer}>
+      <View
+        style={[
+          globalStyles.container,
+          { flexDirection: "row", justifyContent: "space-between" },
+        ]}
+      >
         {otp.map((digit, index) => (
           <TextInput
             key={index}

@@ -10,7 +10,7 @@ export default function ScreenWrapper({ children }: Props) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, padding: 8 }}
+      style={{ flex: 1, padding: 12 }}
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}

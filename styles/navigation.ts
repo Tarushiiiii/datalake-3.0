@@ -26,14 +26,3 @@ export const tabScreenOptions = {
     paddingRight: 15,
   },
 };
-
-export const profileHeaderStyle = {
-  headerStyle: {
-    backgroundColor: colors.primary,
-  },
-  headerTintColor: colors.white,
-  headerTitleStyle: {
-    fontWeight: "bold" as const,
-  },
-  headerTitleAlign: "center",
-};

@@ -8,4 +8,9 @@ export const fonts = {
   helpText: 14,
   footerText: 14,
   menuIcon: 24,
+  normal: 16,
+  sm: 14,
+  xs: 12,
+  mainLabel: 20,
+  mainLabel2: 22,
 };

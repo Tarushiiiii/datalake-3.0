@@ -1,13 +1,13 @@
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { globalStyles } from "@/styles/globalStyles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router, Stack } from "expo-router";
+import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
-import { globalStyles } from "../styles/globalStyles";
-import { profileHeaderStyle } from "../styles/navigation";
+import { Alert, Text, TouchableOpacity } from "react-native";
 
 export default function Profile() {
   const [loggedIn, setLoggedIn] = useState(true);
+
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
       {
@@ -35,50 +35,16 @@ export default function Profile() {
 
   return (
     <ScreenWrapper>
-      <View style={globalStyles.container}>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: "Profile",
-            ...profileHeaderStyle,
-            headerTitleAlign: "center",
-          }}
-        />
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Text style={globalStyles.text}>
-            {loggedIn ? "Hello, World!" : "Logged Out"}
-          </Text>
-
-          <TouchableOpacity
-            onPress={handleLogout}
-            activeOpacity={0.8}
-            style={{
-              marginTop: 25,
-              backgroundColor: "#ff4d4d",
-              paddingVertical: 14,
-              paddingHorizontal: 40,
-              borderRadius: 10,
-              elevation: 3,
-            }}
-          >
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 16,
-                fontWeight: "bold",
-              }}
-            >
-              Logout
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <Text style={globalStyles.text}>
+        This is the profile screen. User details and settings will be shown
+        here.
+      </Text>
+      <TouchableOpacity
+        onPress={handleLogout}
+        style={[globalStyles.button, globalStyles.buttonDanger]}
+      >
+        <Text style={globalStyles.buttonText}>Logout</Text>
+      </TouchableOpacity>
     </ScreenWrapper>
   );
 }
