@@ -31,8 +31,10 @@ export const globalStyles = StyleSheet.create({
   },
 
   footer: {
-    marginTop: 30,
+    marginTop: 20,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
   },
 
   footerText: {

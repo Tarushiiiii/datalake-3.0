@@ -80,8 +80,8 @@ export default function HomeScreen() {
               {/* HEADER */}
               <View style={globalStyles.header}>
                 <Image
-                  source={require("../assets/images/logo.png")}
-                  style={globalStyles.logo}
+                  source={require("../assets/images/mrth.png")}
+                  style={{ width: 120, height: 50, resizeMode: "contain" }}
                 />
 
                 <TouchableOpacity style={{ padding: 6 }}>
@@ -131,9 +131,11 @@ export default function HomeScreen() {
 
                 {/* FOOTER */}
                 <View style={globalStyles.footer}>
-                  <Text style={globalStyles.footerText}>
-                    powered by Digital India
-                  </Text>
+                  <Text style={globalStyles.footerText}>powered by </Text>
+                  <Image
+                    source={require("../assets/images/dic.png")}
+                    style={{ width: 100, height: 40, resizeMode: "contain" }}
+                  />
                 </View>
               </View>
             </View>
