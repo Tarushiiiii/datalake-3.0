@@ -176,4 +176,198 @@ export const globalStyles = StyleSheet.create({
     textAlign: "center",
     fontSize: fonts.helpText,
   },
+
+  syncBanner: {
+    backgroundColor: "#1A3C2E",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    gap: 6,
+  },
+  syncText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 32,
+    gap: 14,
+  },
+
+  // Profile
+  profileCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  profileLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#ddd",
+  },
+  profileInfo: {
+    gap: 2,
+  },
+  profileName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A1A1A",
+  },
+  profileRole: {
+    fontSize: 13,
+    color: "#555",
+  },
+  profileId: {
+    fontSize: 12,
+    color: "#888",
+  },
+  qrButton: {
+    padding: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+
+  // Main card
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  cardDate: {
+    fontSize: 13,
+    color: "#777",
+  },
+
+  // Status
+  statusBlock: {
+    alignItems: "center",
+    paddingVertical: 12,
+    gap: 8,
+  },
+  statusIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  statusIconDanger: {
+    backgroundColor: "#FDECEA",
+  },
+  statusIconSuccess: {
+    backgroundColor: "#E8F5EE",
+  },
+  statusLabel: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  statusLabelDanger: {
+    color: "#C0392B",
+  },
+  statusLabelSuccess: {
+    color: "#1A6B3C",
+  },
+  statusDescription: {
+    fontSize: 13,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 19,
+    paddingHorizontal: 8,
+  },
+
+  // Site GPS row
+  siteRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+  },
+  siteName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#333",
+  },
+  gpsAccuracy: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 2,
+  },
+  gpsHigh: {
+    color: "#1A8A4A",
+    fontWeight: "600",
+  },
+
+  // CTA
+  ctaButton: {
+    backgroundColor: "#1A2A4A",
+    borderRadius: 14,
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ctaText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+
+  // Stats
+  statsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 14,
+    alignItems: "center",
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  statCardRight: {},
+  statLabel: {
+    fontSize: 11,
+    color: "#999",
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1A1A1A",
+  },
+  statSub: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 2,
+  },
 });
