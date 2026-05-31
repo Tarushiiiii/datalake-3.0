@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { colors } from "@/styles/colors";
 import { globalStyles } from "@/styles/globalStyles";
@@ -6,6 +6,7 @@ import { globalStyles } from "@/styles/globalStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import ScreenWrapper from "@/components/ScreenWrapper";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import {
   Alert,
@@ -24,6 +25,24 @@ import {
 export default function HomeScreen() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  useEffect(() => {
+    checkLogin();
+  }, []);
+
+  const checkLogin = async () => {
+    try {
+      const loggedIn = await AsyncStorage.getItem("isLoggedIn");
+
+      if (loggedIn === "true") {
+        router.replace("/(tabs)");
+      }
+    } catch (error) {
+      console.log("Error checking login status:", error);
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
 
   const handleLogin = async () => {
     if (phone.length !== 10) {
@@ -45,7 +64,10 @@ export default function HomeScreen() {
       Alert.alert("Success", "OTP sent successfully.");
 
       // Navigate to OTP screen later
-      router.push("/verify-otp");
+      router.push({
+        pathname: "/verify-otp",
+        params: { phone },
+      });
     } catch (error) {
       console.log(error);
 
@@ -54,6 +76,10 @@ export default function HomeScreen() {
       setLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return null;
+  }
 
   return (
     <ScreenWrapper>

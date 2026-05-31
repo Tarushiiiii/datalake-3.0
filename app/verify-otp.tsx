@@ -1,9 +1,12 @@
 import { globalStyles } from "@/styles/globalStyles";
-import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function VerifyOTPScreen() {
+  const { phone } = useLocalSearchParams<{ phone: string }>();
+
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
 
@@ -31,10 +34,12 @@ export default function VerifyOTPScreen() {
       // Simulated API delay
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
+      await AsyncStorage.setItem("isLoggedIn", "true");
+
       Alert.alert("Success", "OTP verified successfully.");
 
       // Navigate to OTP screen later
-      router.push("/(tabs)");
+      router.replace("/(tabs)");
     } catch (error) {
       console.log(error);
 
@@ -72,9 +77,17 @@ export default function VerifyOTPScreen() {
         disabled={loading}
       >
         <Text style={globalStyles.buttonText}>
-          {loading ? "Verifying OTP..." : "Verify OTP"}
+          {loading ? "Verifying..." : "Verify"}
         </Text>
       </TouchableOpacity>
+
+      <View style={globalStyles.footer}>
+        <Text>Didn't receive the OTP? </Text>
+
+        <TouchableOpacity onPress={() => console.log("Resend OTP to", phone)}>
+          <Text style={globalStyles.helpLink}>Resend OTP</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

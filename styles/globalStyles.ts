@@ -45,13 +45,9 @@ export const globalStyles = StyleSheet.create({
 
   button: {
     backgroundColor: colors.primary,
-
     paddingVertical: 18,
-
     borderRadius: 50,
-
     alignItems: "center",
-
     shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
@@ -59,7 +55,6 @@ export const globalStyles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 8,
-
     elevation: 6,
   },
 
@@ -121,7 +116,6 @@ export const globalStyles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.96)",
     borderRadius: 32,
     padding: 28,
-
     shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
@@ -129,7 +123,6 @@ export const globalStyles = StyleSheet.create({
     },
     shadowOpacity: 0.15,
     shadowRadius: 10,
-
     elevation: 8,
   },
 
