@@ -60,8 +60,6 @@ export default function LoginScreen() {
       // Simulated API delay — replace with real OTP request
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      Alert.alert("Success", "OTP sent successfully.");
-
       // [AUTH FLOW] Use replace() so Login screen is removed from the stack.
       // The user cannot press back from OTP screen to return to Login.
       router.replace({
@@ -147,7 +145,7 @@ export default function LoginScreen() {
                   disabled={loading}
                 >
                   <Text style={globalStyles.buttonText}>
-                    {loading ? "Sending OTP..." : "Login using OTP"}
+                    Login using Security PIN
                   </Text>
                 </TouchableOpacity>
 
