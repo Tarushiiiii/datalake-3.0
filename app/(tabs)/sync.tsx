@@ -12,7 +12,8 @@ export default function Sync() {
   const records = useAttendanceStore((s) => s.records);
 
   const sorted = [...records].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    (a, b) =>
+      new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime(),
   );
 
   if (sorted.length === 0) {

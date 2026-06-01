@@ -28,6 +28,10 @@ export default function VerifyOTPScreen() {
         "Invalid Security Code",
         "Please enter the correct Security Code.",
       );
+      Alert.alert(
+        "Invalid Security Code",
+        "Please enter the correct Security Code.",
+      );
       return;
     }
 
@@ -35,12 +39,15 @@ export default function VerifyOTPScreen() {
       setLoading(true);
 
       // Simulated API delay — replace with real Security Code verification
+      // Simulated API delay — replace with real Security Code verification
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       await AsyncStorage.setItem("isLoggedIn", "true");
 
       Alert.alert("Success", "Security Code verified successfully.");
+      Alert.alert("Success", "Security Code verified successfully.");
 
+      // [AUTH FLOW] Use replace() so Security Code screen is removed from the stack.
       // [AUTH FLOW] Use replace() so Security Code screen is removed from the stack.
       router.replace("/(tabs)");
     } catch (error) {
@@ -58,15 +65,20 @@ export default function VerifyOTPScreen() {
           {/* Card Header */}
           <View style={globalStyles.cardHeader}>
             <Text style={globalStyles.cardTitle}>Enter Security Code</Text>
+            <Text style={globalStyles.cardTitle}>Enter Security Code</Text>
           </View>
 
+          {/* <Text style={globalStyles.statusDescription}>
+            Security Code sent to{" "}
           {/* <Text style={globalStyles.statusDescription}>
             Security Code sent to{" "}
             <Text style={{ fontWeight: "700", color: colors.auxiliary2 }}>
               +91 {phone}
             </Text>
           </Text> */}
+          </Text> */}
 
+          {/* Security Code Inputs */}
           {/* Security Code Inputs */}
           <View
             style={{
@@ -96,6 +108,7 @@ export default function VerifyOTPScreen() {
             disabled={loading}
           >
             <Text style={globalStyles.buttonText}>
+              {loading ? "Verifying..." : "Verify Security Code"}
               {loading ? "Verifying..." : "Verify Security Code"}
             </Text>
           </TouchableOpacity>

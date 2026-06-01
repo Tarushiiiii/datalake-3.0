@@ -18,6 +18,7 @@ interface AttendanceState {
 
   checkIn: () => void;
   checkOut: () => void;
+  clearRecords: () => void;
 
   markAsSynced: (checkInTime: string) => void;
 
@@ -29,15 +30,27 @@ interface AttendanceState {
 }
 
 function getTodayISO() {
-  return new Date().toISOString().split("T")[0];
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
 
 function getWeekDates() {
-  const today = new Date();
-  const day = today.getDay();
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
 
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((day + 6) % 7));
+  const year = Number(parts.find((p) => p.type === "year")!.value);
+  const month = Number(parts.find((p) => p.type === "month")!.value) - 1;
+  const day = Number(parts.find((p) => p.type === "day")!.value);
+
+  const base = new Date(year, month, day);
+  const dow = base.getDay();
+
+  const monday = new Date(base);
+  monday.setDate(base.getDate() - ((dow + 6) % 7));
 
   return Array.from({ length: 5 }, (_, i) => {
     const d = new Date(monday);
@@ -53,9 +66,7 @@ function getWeekDates() {
 
 function hoursBetween(start: string, end: string | null): number {
   if (!end) return 0;
-
   const diff = new Date(end).getTime() - new Date(start).getTime();
-
   return Math.round((diff / (1000 * 60 * 60)) * 10) / 10;
 }
 
@@ -78,7 +89,6 @@ export const useAttendanceStore = create<AttendanceState>()(
           return `${year}-${month}-${day}`;
         }
         const siteName = get().currentSiteName ?? "Unknown Site";
-
         set((state) => ({
           records: [
             ...state.records,
@@ -95,9 +105,7 @@ export const useAttendanceStore = create<AttendanceState>()(
 
       checkOut: () => {
         const today = getTodayISO();
-
         const records = [...get().records];
-
         const lastOpenIndex = records
           .map((r, i) => ({ r, i }))
           .filter(({ r }) => r.date === today && !r.checkOutTime)
@@ -109,18 +117,16 @@ export const useAttendanceStore = create<AttendanceState>()(
           ...records[lastOpenIndex],
           checkOutTime: new Date().toISOString(),
         };
-
         set({ records });
       },
+
+      clearRecords: () => set({ records: [] }),
 
       markAsSynced: (checkInTime: string) => {
         set((state) => ({
           records: state.records.map((record) =>
             record.checkInTime === checkInTime
-              ? {
-                  ...record,
-                  isSynced: true,
-                }
+              ? { ...record, isSynced: true }
               : record,
           ),
         }));
@@ -133,19 +139,16 @@ export const useAttendanceStore = create<AttendanceState>()(
 
       weeklyCount: () => {
         const weekDates = getWeekDates();
-
         const daysWithRecords = new Set(
           get()
             .records.filter((r) => weekDates.includes(r.date))
             .map((r) => r.date),
         );
-
         return daysWithRecords.size;
       },
 
       weeklyHours: () => {
         const weekDates = getWeekDates();
-
         return get()
           .records.filter((r) => weekDates.includes(r.date))
           .reduce(
