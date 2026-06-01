@@ -1,6 +1,7 @@
 import GetLocation from "@/components/getLocation";
 import ProfileHeader from "@/components/profileHeader";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import SyncStatus from "@/components/syncStatus";
 import { useAttendanceStore } from "@/store/attendanceStore";
 import { colors } from "@/styles/colors";
 import { globalStyles } from "@/styles/globalStyles";
@@ -31,21 +32,7 @@ export default function Index() {
   return (
     <ScreenWrapper>
       {/* Top sync banner */}
-      <View
-        style={[
-          globalStyles.statusBadge,
-          { backgroundColor: isSynced ? colors.success : colors.warning },
-        ]}
-      >
-        <MaterialCommunityIcons
-          name="cloud-sync-outline"
-          size={16}
-          color={colors.white}
-        />
-        <Text style={globalStyles.syncText}>
-          Sync Status: {isSynced ? "Up to date" : "Pending sync"}
-        </Text>
-      </View>
+      <SyncStatus />
 
       {/* Profile Header */}
       <ProfileHeader />

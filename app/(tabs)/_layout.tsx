@@ -53,7 +53,7 @@ export default function TabLayout() {
         }}
       />
 
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="reports"
         options={{
           title: "Reports",
@@ -65,12 +65,12 @@ export default function TabLayout() {
             />
           ),
         }}
-      />
+      /> */}
 
       <Tabs.Screen
         name="sync"
         options={{
-          title: "Sync",
+          title: "Auto Sync",
           tabBarIcon: ({ color, focused }) => (
             <MaterialCommunityIcons
               name={focused ? "cloud-sync" : "cloud-sync-outline"}

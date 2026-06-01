@@ -1,4 +1,3 @@
-import { colors } from "@/styles/colors";
 import { globalStyles } from "@/styles/globalStyles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
@@ -25,21 +24,24 @@ export default function VerifyOTPScreen() {
 
   const verifyOTP = async () => {
     if (otp.join("") !== "5775") {
-      Alert.alert("Invalid OTP", "Please enter the correct OTP.");
+      Alert.alert(
+        "Invalid Security Code",
+        "Please enter the correct Security Code.",
+      );
       return;
     }
 
     try {
       setLoading(true);
 
-      // Simulated API delay — replace with real OTP verification
+      // Simulated API delay — replace with real Security Code verification
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       await AsyncStorage.setItem("isLoggedIn", "true");
 
-      Alert.alert("Success", "OTP verified successfully.");
+      Alert.alert("Success", "Security Code verified successfully.");
 
-      // [AUTH FLOW] Use replace() so OTP screen is removed from the stack.
+      // [AUTH FLOW] Use replace() so Security Code screen is removed from the stack.
       router.replace("/(tabs)");
     } catch (error) {
       console.error(error);
@@ -55,17 +57,17 @@ export default function VerifyOTPScreen() {
         <View style={globalStyles.card}>
           {/* Card Header */}
           <View style={globalStyles.cardHeader}>
-            <Text style={globalStyles.cardTitle}>Enter OTP</Text>
+            <Text style={globalStyles.cardTitle}>Enter Security Code</Text>
           </View>
 
-          <Text style={globalStyles.statusDescription}>
-            OTP sent to{" "}
+          {/* <Text style={globalStyles.statusDescription}>
+            Security Code sent to{" "}
             <Text style={{ fontWeight: "700", color: colors.auxiliary2 }}>
               +91 {phone}
             </Text>
-          </Text>
+          </Text> */}
 
-          {/* OTP Inputs */}
+          {/* Security Code Inputs */}
           <View
             style={{
               flexDirection: "row",
@@ -94,20 +96,20 @@ export default function VerifyOTPScreen() {
             disabled={loading}
           >
             <Text style={globalStyles.buttonText}>
-              {loading ? "Verifying..." : "Verify OTP"}
+              {loading ? "Verifying..." : "Verify Security Code"}
             </Text>
           </TouchableOpacity>
 
-          <View style={globalStyles.footer}>
+          {/* <View style={globalStyles.footer}>
             <Text style={globalStyles.footerText}>
-              Didn't receive the OTP?{" "}
+              Didn't receive the Security Code?{" "}
             </Text>
             <TouchableOpacity
-              onPress={() => console.log("Resend OTP to", phone)}
+              onPress={() => console.log("Resend Security Code to", phone)}
             >
-              <Text style={globalStyles.helpLink}>Resend OTP</Text>
+              <Text style={globalStyles.helpLink}>Resend Security Code</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
       </View>
     </>

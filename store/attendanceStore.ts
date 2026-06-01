@@ -43,7 +43,11 @@ function getWeekDates() {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
 
-    return d.toISOString().split("T")[0];
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
   });
 }
 
@@ -64,14 +68,22 @@ export const useAttendanceStore = create<AttendanceState>()(
       setCurrentSiteName: (name: string) => set({ currentSiteName: name }),
 
       checkIn: () => {
-        const today = getTodayISO();
+        function getTodayISO() {
+          const today = new Date();
+
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, "0");
+          const day = String(today.getDate()).padStart(2, "0");
+
+          return `${year}-${month}-${day}`;
+        }
         const siteName = get().currentSiteName ?? "Unknown Site";
 
         set((state) => ({
           records: [
             ...state.records,
             {
-              date: today,
+              date: getTodayISO(),
               checkInTime: new Date().toISOString(),
               checkOutTime: null,
               siteName,
