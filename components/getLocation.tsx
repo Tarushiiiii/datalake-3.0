@@ -1,3 +1,4 @@
+import { useAttendanceStore } from "@/store/attendanceStore";
 import { colors } from "@/styles/colors";
 import { globalStyles } from "@/styles/globalStyles";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,15 +34,15 @@ function getGpsInfo(state: LocationState): { label: string; style: object } {
 function buildSiteName(geocode: Location.LocationGeocodedAddress[]): string {
   const place = geocode[0];
   if (!place) return "Unknown Site";
-
   const parts = [place.name, place.street, place.district, place.city].filter(
     Boolean,
   );
-
   return parts.length > 0 ? parts.join(", ") : "Unknown Site";
 }
 
 export default function GetLocation() {
+  const setCurrentSiteName = useAttendanceStore((s) => s.setCurrentSiteName);
+
   const [locationState, setLocationState] = useState<LocationState>({
     permission: null,
     accuracy: null,
@@ -69,18 +70,20 @@ export default function GetLocation() {
         });
 
         const { latitude, longitude } = location.coords;
-
         const geocode = await Location.reverseGeocodeAsync({
           latitude,
           longitude,
         });
+        const siteName = buildSiteName(geocode);
 
         setLocationState({
           permission: status,
           accuracy: Math.round(location.coords.accuracy ?? 0),
-          siteName: buildSiteName(geocode),
+          siteName,
           error: null,
         });
+
+        setCurrentSiteName(siteName);
       } catch {
         setLocationState({
           permission: status,

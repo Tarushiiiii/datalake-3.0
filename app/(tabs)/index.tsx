@@ -1,3 +1,4 @@
+import GetLocation from "@/components/getLocation";
 import ProfileHeader from "@/components/profileHeader";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { useAttendanceStore } from "@/store/attendanceStore";
@@ -20,17 +21,30 @@ export default function Index() {
   const checkOut = useAttendanceStore((s) => s.checkOut);
   const weeklyCount = useAttendanceStore((s) => s.weeklyCount());
   const weeklyHours = useAttendanceStore((s) => s.weeklyHours());
+  const currentSiteName = useAttendanceStore((s) => s.currentSiteName);
+
+  const locationReady = !!currentSiteName;
+  const records = useAttendanceStore((s) => s.records);
+
+  const isSynced = records.length === 0 || records.every((r) => r.isSynced);
 
   return (
     <ScreenWrapper>
       {/* Top sync banner */}
-      <View style={globalStyles.syncBanner}>
+      <View
+        style={[
+          globalStyles.statusBadge,
+          { backgroundColor: isSynced ? colors.success : colors.warning },
+        ]}
+      >
         <MaterialCommunityIcons
           name="cloud-sync-outline"
           size={16}
           color={colors.white}
         />
-        <Text style={globalStyles.syncText}>Sync Status: Up to date</Text>
+        <Text style={globalStyles.syncText}>
+          Sync Status: {isSynced ? "Up to date" : "Pending sync"}
+        </Text>
       </View>
 
       {/* Profile Header */}
@@ -110,22 +124,7 @@ export default function Index() {
         </View>
 
         {/* GPS Site Row */}
-        <View style={globalStyles.siteRow}>
-          <Ionicons
-            name="navigate-outline"
-            size={18}
-            color={colors.auxiliary2}
-            style={{ marginRight: 8 }}
-          />
-          <View>
-            <Text style={globalStyles.siteName}>
-              Site: Sector 18 Road Expansion
-            </Text>
-            <Text style={globalStyles.gpsAccuracy}>
-              GPS Accuracy: <Text style={globalStyles.gpsHigh}>High (4m)</Text>
-            </Text>
-          </View>
-        </View>
+        <GetLocation />
       </View>
 
       {/* CTA Buttons */}
@@ -134,18 +133,24 @@ export default function Index() {
           style={[
             globalStyles.button,
             { flexDirection: "row", justifyContent: "center" },
+            !locationReady && { opacity: 0.5 },
           ]}
           activeOpacity={0.85}
+          disabled={!locationReady}
           onPress={() => router.push("/attendance")}
         >
           <Ionicons
-            name="finger-print"
+            name={locationReady ? "finger-print" : "location-outline"}
             size={22}
             color={colors.white}
             style={{ marginRight: 10 }}
           />
           <Text style={globalStyles.buttonText}>
-            {isMarkedToday ? "Mark Attendance (New Site)" : "Check In"}
+            {!locationReady
+              ? "Fetching location..."
+              : isMarkedToday
+                ? "Mark Attendance"
+                : "Check In"}
           </Text>
         </TouchableOpacity>
       )}

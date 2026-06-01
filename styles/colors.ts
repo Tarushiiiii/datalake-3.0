@@ -9,5 +9,4 @@ export const colors = {
   warning: "#F0A500",
   auxiliary: "#777",
   auxiliary2: "#555",
-  sync: "#1A3C2E",
 };

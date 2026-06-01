@@ -190,12 +190,11 @@ export const globalStyles = StyleSheet.create({
     fontSize: fonts.helpText,
   },
 
-  syncBanner: {
-    backgroundColor: colors.sync,
+  statusBadge: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
+    padding: 8,
     gap: 6,
     borderRadius: 8,
     marginBottom: 16,
@@ -269,6 +268,12 @@ export const globalStyles = StyleSheet.create({
   cardDate: {
     fontSize: fonts.sm,
     color: colors.auxiliary,
+  },
+
+  cardTime: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
   },
 
   // Status
@@ -360,5 +365,11 @@ export const globalStyles = StyleSheet.create({
     fontSize: fonts.xs,
     color: colors.auxiliary,
     marginTop: 2,
+  },
+
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.shadow,
+    marginBottom: 10,
   },
 });
