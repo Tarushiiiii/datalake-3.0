@@ -65,20 +65,8 @@ export default function VerifyOTPScreen() {
           {/* Card Header */}
           <View style={globalStyles.cardHeader}>
             <Text style={globalStyles.cardTitle}>Enter Security Code</Text>
-            <Text style={globalStyles.cardTitle}>Enter Security Code</Text>
           </View>
 
-          {/* <Text style={globalStyles.statusDescription}>
-            Security Code sent to{" "}
-          {/* <Text style={globalStyles.statusDescription}>
-            Security Code sent to{" "}
-            <Text style={{ fontWeight: "700", color: colors.auxiliary2 }}>
-              +91 {phone}
-            </Text>
-          </Text> */}
-          </Text> */}
-
-          {/* Security Code Inputs */}
           {/* Security Code Inputs */}
           <View
             style={{
@@ -109,20 +97,8 @@ export default function VerifyOTPScreen() {
           >
             <Text style={globalStyles.buttonText}>
               {loading ? "Verifying..." : "Verify Security Code"}
-              {loading ? "Verifying..." : "Verify Security Code"}
             </Text>
           </TouchableOpacity>
-
-          {/* <View style={globalStyles.footer}>
-            <Text style={globalStyles.footerText}>
-              Didn't receive the Security Code?{" "}
-            </Text>
-            <TouchableOpacity
-              onPress={() => console.log("Resend Security Code to", phone)}
-            >
-              <Text style={globalStyles.helpLink}>Resend Security Code</Text>
-            </TouchableOpacity>
-          </View> */}
         </View>
       </View>
     </>
