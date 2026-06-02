@@ -8,8 +8,6 @@ export const WEEKLY_HOUR_LIMIT = 40;
 export type ProjectStatus = "pending" | "in_progress" | "completed";
 export type SyncStatus = "synced" | "pending_sync" | "error";
 
-// ─── Domain types ────────────────────────────────────────────────────────────
-
 export interface Project {
   id: string;
   siteName: string;
@@ -22,7 +20,6 @@ export interface Project {
   updatedAt: string;
 }
 
-// Derived at read-time from attendance records — never stored
 export interface ProjectWithDerived extends Project {
   completedHours: number; // sum of all attendance session hours for this site
   progressPercent: number;
@@ -46,8 +43,6 @@ export interface WeeklySummary {
   availableWeeklyHours: number;
   weeklyLimitReached: boolean;
 }
-
-// ─── Internal helpers ─────────────────────────────────────────────────────────
 
 function hoursBetween(start: string, end: string | null): number {
   if (!end) return 0;
@@ -84,8 +79,6 @@ function deriveProject(
   };
 }
 
-// ─── Store interface ──────────────────────────────────────────────────────────
-
 interface ProjectStore {
   projects: Project[];
 
@@ -105,8 +98,6 @@ interface ProjectStore {
 
   getWeeklySummary: () => WeeklySummary;
 }
-
-// ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useProjectStore = create<ProjectStore>()(
   persist(

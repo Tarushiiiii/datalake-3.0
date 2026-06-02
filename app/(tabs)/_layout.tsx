@@ -53,20 +53,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* <Tabs.Screen
-        name="reports"
-        options={{
-          title: "Reports",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "clipboard-sharp" : "clipboard-outline"}
-              color={color}
-              size={24}
-            />
-          ),
-        }}
-      /> */}
-
       <Tabs.Screen
         name="sync"
         options={{

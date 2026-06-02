@@ -28,10 +28,6 @@ export default function VerifyOTPScreen() {
         "Invalid Security Code",
         "Please enter the correct Security Code.",
       );
-      Alert.alert(
-        "Invalid Security Code",
-        "Please enter the correct Security Code.",
-      );
       return;
     }
 
@@ -39,15 +35,12 @@ export default function VerifyOTPScreen() {
       setLoading(true);
 
       // Simulated API delay — replace with real Security Code verification
-      // Simulated API delay — replace with real Security Code verification
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       await AsyncStorage.setItem("isLoggedIn", "true");
 
       Alert.alert("Success", "Security Code verified successfully.");
-      Alert.alert("Success", "Security Code verified successfully.");
 
-      // [AUTH FLOW] Use replace() so Security Code screen is removed from the stack.
       // [AUTH FLOW] Use replace() so Security Code screen is removed from the stack.
       router.replace("/(tabs)");
     } catch (error) {
