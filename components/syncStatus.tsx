@@ -108,7 +108,7 @@ const SyncStatus = () => {
         color={colors.white}
       />
 
-      <Text style={globalStyles.syncText}>Sync Status: {status.text}</Text>
+      <Text style={globalStyles.statusText}>Sync Status: {status.text}</Text>
     </View>
   );
 };

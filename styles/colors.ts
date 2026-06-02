@@ -9,4 +9,7 @@ export const colors = {
   warning: "#F0A500",
   auxiliary: "#777",
   auxiliary2: "#555",
+  completed: "#16A34A",
+  inProgress: "#f39c12",
+  pending: "#e67e22",
 };

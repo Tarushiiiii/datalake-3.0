@@ -1,4 +1,8 @@
 import type { ProjectWithDerived } from "@/store/projectStore";
+import { colors } from "@/styles/colors";
+import { fonts } from "@/styles/fonts";
+import { globalStyles } from "@/styles/globalStyles";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -12,30 +16,36 @@ export default function ProjectCard({ project }: Props) {
   const hasActiveSessions = project.sessions.some((s) => !s.checkOutTime);
 
   return (
-    <View style={styles.card}>
+    <View style={globalStyles.card}>
       {/* ── Header ── */}
-      <View style={styles.headerRow}>
+      <View style={globalStyles.cardHeader}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{project.siteName}</Text>
-          <Text style={styles.location}>📍 {project.location}</Text>
+          <Text style={globalStyles.cardTitle}>{project.siteName}</Text>
+          <Text style={globalStyles.siteName}>
+            <Ionicons
+              name="navigate-outline"
+              size={18}
+              color={colors.auxiliary2}
+              style={{ marginRight: 8 }}
+            />{" "}
+            {project.location}
+          </Text>
         </View>
 
         <View
           style={[
-            styles.statusBadge,
-            project.status === "completed" && styles.badgeCompleted,
-            project.status === "in_progress" && styles.badgeInProgress,
-            project.status === "pending" && styles.badgePending,
+            globalStyles.statusBadge,
+            project.status === "completed" && {
+              backgroundColor: colors.completed,
+            },
+            project.status === "in_progress" && {
+              backgroundColor: colors.inProgress,
+            },
+            project.status === "pending" && { backgroundColor: colors.pending },
+            { opacity: 0.8 },
           ]}
         >
-          <Text
-            style={[
-              styles.statusText,
-              project.status === "completed" && styles.statusTextCompleted,
-              project.status === "in_progress" && styles.statusTextInProgress,
-              project.status === "pending" && styles.statusTextPending,
-            ]}
-          >
+          <Text style={[globalStyles.statusText, { fontSize: fonts.xs }]}>
             {project.status === "completed"
               ? "Completed"
               : project.status === "in_progress"
@@ -134,50 +144,6 @@ function formatTime(iso: string): string {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 16,
-    marginHorizontal: 16,
-    marginBottom: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-
-  // ── Header ──
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  location: {
-    marginTop: 2,
-    fontSize: 12,
-    color: "#6B7280",
-  },
-  statusBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginLeft: 8,
-    alignSelf: "flex-start",
-  },
-  badgeCompleted: { backgroundColor: "#DCFCE7" },
-  badgeInProgress: { backgroundColor: "#DBEAFE" },
-  badgePending: { backgroundColor: "#F3F4F6" },
-  statusText: { fontSize: 11, fontWeight: "600" },
-  statusTextCompleted: { color: "#16A34A" },
-  statusTextInProgress: { color: "#2563EB" },
-  statusTextPending: { color: "#6B7280" },
-
   // ── Progress ──
   progressRow: {
     flexDirection: "row",
@@ -187,12 +153,12 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#374151",
+    color: colors.auxiliary2,
   },
   percent: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#6366F1",
+    color: colors.primary,
   },
   track: {
     height: 8,
@@ -202,13 +168,13 @@ const styles = StyleSheet.create({
   },
   fill: {
     height: 8,
-    backgroundColor: "#6366F1",
+    backgroundColor: colors.primary,
     borderRadius: 999,
   },
   remaining: {
     marginTop: 8,
     fontSize: 12,
-    color: "#9CA3AF",
+    color: colors.auxiliary,
   },
 
   // ── Sessions ──
@@ -219,16 +185,16 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
+    borderTopColor: colors.shadow,
   },
   sessionsToggleText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#6366F1",
+    color: colors.primary,
   },
   chevron: {
     fontSize: 10,
-    color: "#6366F1",
+    color: colors.primary,
   },
   sessionsList: {
     marginTop: 10,
@@ -248,12 +214,12 @@ const styles = StyleSheet.create({
   },
   sessionDate: {
     fontSize: 11,
-    color: "#6B7280",
+    color: colors.auxiliary,
     fontWeight: "500",
   },
   sessionTime: {
     fontSize: 12,
-    color: "#374151",
+    color: colors.auxiliary2,
   },
   sessionRight: {
     alignItems: "flex-end",
@@ -261,13 +227,13 @@ const styles = StyleSheet.create({
   sessionHours: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.auxiliary2,
   },
   activeDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#22C55E",
+    backgroundColor: colors.success,
   },
   sessionSubtotal: {
     flexDirection: "row",
@@ -276,16 +242,16 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     marginTop: 2,
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: colors.shadow,
   },
   sessionSubtotalLabel: {
     fontSize: 12,
-    color: "#6B7280",
+    color: colors.auxiliary,
     fontWeight: "500",
   },
   sessionSubtotalValue: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.primary,
   },
 });

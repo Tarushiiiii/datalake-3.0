@@ -45,7 +45,7 @@ function StatusBadge({ isSynced }: { isSynced: boolean }) {
         style={{ marginRight: 4 }}
         color={colors.white}
       />
-      <Text style={[globalStyles.syncText, { fontSize: fonts.sm }]}>
+      <Text style={[globalStyles.statusText, { fontSize: fonts.sm }]}>
         {isSynced ? "Synced" : "Pending"}
       </Text>
     </View>

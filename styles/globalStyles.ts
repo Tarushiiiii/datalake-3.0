@@ -200,7 +200,7 @@ export const globalStyles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  syncText: {
+  statusText: {
     color: colors.white,
     fontSize: fonts.sm,
     fontWeight: "500",
