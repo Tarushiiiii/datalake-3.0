@@ -97,27 +97,35 @@ export default function ProjectCard({ project }: Props) {
 
           {expanded && (
             <View style={styles.sessionsList}>
-              {project.sessions.map((session, i) => (
-                <View key={session.checkInTime} style={styles.sessionRow}>
-                  <View style={styles.sessionLeft}>
-                    <Text style={styles.sessionDate}>{session.date}</Text>
-                    <Text style={styles.sessionTime}>
-                      {formatTime(session.checkInTime)}
-                      {" → "}
-                      {session.checkOutTime
-                        ? formatTime(session.checkOutTime)
-                        : "ongoing"}
-                    </Text>
+              {[...project.sessions]
+                .sort(
+                  (a, b) =>
+                    new Date(b.checkInTime).getTime() -
+                    new Date(a.checkInTime).getTime(),
+                )
+                .map((session) => (
+                  <View key={session.checkInTime} style={styles.sessionRow}>
+                    <View style={styles.sessionLeft}>
+                      <Text style={styles.sessionDate}>{session.date}</Text>
+                      <Text style={styles.sessionTime}>
+                        {formatTime(session.checkInTime)}
+                        {" → "}
+                        {session.checkOutTime
+                          ? formatTime(session.checkOutTime)
+                          : "ongoing"}
+                      </Text>
+                    </View>
+                    <View style={styles.sessionRight}>
+                      {session.checkOutTime ? (
+                        <Text style={styles.sessionHours}>
+                          {session.hours}h
+                        </Text>
+                      ) : (
+                        <View style={styles.activeDot} />
+                      )}
+                    </View>
                   </View>
-                  <View style={styles.sessionRight}>
-                    {session.checkOutTime ? (
-                      <Text style={styles.sessionHours}>{session.hours}h</Text>
-                    ) : (
-                      <View style={styles.activeDot} />
-                    )}
-                  </View>
-                </View>
-              ))}
+                ))}
 
               {/* Sessions subtotal */}
               <View style={styles.sessionSubtotal}>
