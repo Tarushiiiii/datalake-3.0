@@ -1,4 +1,3 @@
-import ScreenWrapper from "@/components/ScreenWrapper";
 import { useAttendanceStore } from "@/store/attendanceStore";
 import { globalStyles } from "@/styles/globalStyles";
 
@@ -51,21 +50,21 @@ export default function AttendanceCamera() {
 
   if (!permission.granted) {
     return (
-      <ScreenWrapper>
+      <>
+        {" "}
         <Text style={globalStyles.text}>Camera permission required</Text>
-
         <TouchableOpacity
           style={globalStyles.button}
           onPress={requestPermission}
         >
           <Text style={globalStyles.buttonText}>Grant Permission</Text>
         </TouchableOpacity>
-      </ScreenWrapper>
+      </>
     );
   }
 
   return (
-    <ScreenWrapper>
+    <>
       <CameraView style={styles.camera} facing={facing} />
 
       <View style={styles.overlay}>
@@ -75,7 +74,7 @@ export default function AttendanceCamera() {
           {scanning ? "Scanning Face..." : "Face Verified"}
         </Text>
       </View>
-    </ScreenWrapper>
+    </>
   );
 }
 

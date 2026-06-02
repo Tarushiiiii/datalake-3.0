@@ -2,6 +2,7 @@ import GetLocation from "@/components/getLocation";
 import ProfileHeader from "@/components/profileHeader";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import SyncStatus from "@/components/syncStatus";
+import WeeklySummary from "@/components/weeklySummary";
 import { useAttendanceStore } from "@/store/attendanceStore";
 import { colors } from "@/styles/colors";
 import { globalStyles } from "@/styles/globalStyles";
@@ -20,29 +21,19 @@ export default function Index() {
   const isMarkedToday = useAttendanceStore((s) => s.isMarkedToday());
   const isCheckedInToday = useAttendanceStore((s) => s.isCheckedInToday());
   const checkOut = useAttendanceStore((s) => s.checkOut);
-  const weeklyCount = useAttendanceStore((s) => s.weeklyCount());
-  const weeklyHours = useAttendanceStore((s) => s.weeklyHours());
   const currentSiteName = useAttendanceStore((s) => s.currentSiteName);
 
   const locationReady = !!currentSiteName;
-  const records = useAttendanceStore((s) => s.records);
-
-  const isSynced = records.length === 0 || records.every((r) => r.isSynced);
 
   return (
     <ScreenWrapper>
-      {/* Top sync banner */}
       <SyncStatus />
-
-      {/* Profile Header */}
       <ProfileHeader />
 
-      {/* Attendance Card */}
       <View style={globalStyles.card}>
         <Text style={globalStyles.cardTitle}>Today's Attendance</Text>
         <Text style={globalStyles.cardDate}>{today}</Text>
 
-        {/* Status Block */}
         <View style={globalStyles.statusBlock}>
           {isMarkedToday ? (
             <>
@@ -110,11 +101,10 @@ export default function Index() {
           )}
         </View>
 
-        {/* GPS Site Row */}
         <GetLocation />
       </View>
 
-      {/* CTA Buttons */}
+      {/* Check In — goes through camera for face verification */}
       {!isCheckedInToday && (
         <TouchableOpacity
           style={[
@@ -124,7 +114,12 @@ export default function Index() {
           ]}
           activeOpacity={0.85}
           disabled={!locationReady}
-          onPress={() => router.push("/attendance")}
+          onPress={() =>
+            router.push({
+              pathname: "/attendance-camera",
+              params: { mode: "checkin" },
+            })
+          }
         >
           <Ionicons
             name={locationReady ? "finger-print" : "location-outline"}
@@ -142,6 +137,7 @@ export default function Index() {
         </TouchableOpacity>
       )}
 
+      {/* Check Out — instant, no camera */}
       {isCheckedInToday && (
         <TouchableOpacity
           style={[
@@ -150,7 +146,10 @@ export default function Index() {
             { flexDirection: "row", justifyContent: "center" },
           ]}
           activeOpacity={0.85}
-          onPress={checkOut}
+          onPress={() => {
+            checkOut();
+            router.replace("/(tabs)");
+          }}
         >
           <Ionicons
             name="log-out-outline"
@@ -162,19 +161,7 @@ export default function Index() {
         </TouchableOpacity>
       )}
 
-      {/* Stats Row */}
-      <View style={globalStyles.statsRow}>
-        <View style={globalStyles.statCard}>
-          <Text style={globalStyles.statLabel}>THIS WEEK</Text>
-          <Text style={globalStyles.statValue}>{weeklyCount} / 5</Text>
-          <Text style={globalStyles.statSub}>Days Present</Text>
-        </View>
-        <View style={globalStyles.statCard}>
-          <Text style={globalStyles.statLabel}>TOTAL HOURS</Text>
-          <Text style={globalStyles.statValue}>{weeklyHours}</Text>
-          <Text style={globalStyles.statSub}>Working Hours</Text>
-        </View>
-      </View>
+      <WeeklySummary />
     </ScreenWrapper>
   );
 }

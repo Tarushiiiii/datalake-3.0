@@ -6,27 +6,12 @@ import { Alert, Text, TouchableOpacity } from "react-native";
 
 export default function Attendance() {
   const [loading, setLoading] = useState(false);
-  const checkIn = useAttendanceStore((s) => s.checkIn);
-  const checkOut = useAttendanceStore((s) => s.checkOut);
   const isCheckedInToday = useAttendanceStore((s) => s.isCheckedInToday());
 
   const handleMark = async () => {
     try {
       setLoading(true);
-
-      // Simulated API delay — replace with real ML/API call
-      // await new Promise((resolve) => setTimeout(resolve, 1500));
-      router.push("/attendance-camera");
-
-      // if (isCheckedInToday) {
-      //   checkOut();
-      //   Alert.alert("Checked Out", "Your hours have been logged.");
-      // } else {
-      //   checkIn();
-      //   Alert.alert("Checked In", "Attendance marked successfully.");
-      // }
-
-      // router.push("/(tabs)");
+      router.push({ pathname: "/attendance-camera" });
     } catch (error) {
       console.error(error);
       Alert.alert("Error", "Something went wrong.");
@@ -42,11 +27,7 @@ export default function Attendance() {
       disabled={loading}
     >
       <Text style={globalStyles.buttonText}>
-        {loading
-          ? "Please wait..."
-          : isCheckedInToday
-            ? "Check Out"
-            : "Check In"}
+        {loading ? "Please wait..." : "Check In"}
       </Text>
     </TouchableOpacity>
   );
