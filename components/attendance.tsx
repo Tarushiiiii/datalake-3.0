@@ -15,17 +15,18 @@ export default function Attendance() {
       setLoading(true);
 
       // Simulated API delay — replace with real ML/API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // await new Promise((resolve) => setTimeout(resolve, 1500));
+      router.push("/attendance-camera");
 
-      if (isCheckedInToday) {
-        checkOut();
-        Alert.alert("Checked Out", "Your hours have been logged.");
-      } else {
-        checkIn();
-        Alert.alert("Checked In", "Attendance marked successfully.");
-      }
+      // if (isCheckedInToday) {
+      //   checkOut();
+      //   Alert.alert("Checked Out", "Your hours have been logged.");
+      // } else {
+      //   checkIn();
+      //   Alert.alert("Checked In", "Attendance marked successfully.");
+      // }
 
-      router.push("/(tabs)");
+      // router.push("/(tabs)");
     } catch (error) {
       console.error(error);
       Alert.alert("Error", "Something went wrong.");
