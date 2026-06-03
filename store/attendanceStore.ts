@@ -1,37 +1,50 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+// store/attendanceStore.ts
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { getDb, type AttendanceRow } from "@/lib/db";
 
-interface DayRecord {
+export interface DayRecord {
+  id: number;
   date: string;
   checkInTime: string;
   checkOutTime: string | null;
   siteName: string;
+  latitude?: number | null;
+  longitude?: number | null;
   isSynced: boolean;
+  syncStatus: "pending" | "synced" | "error";
 }
 
 interface AttendanceState {
   records: DayRecord[];
   currentSiteName: string | null;
+  currentLat: number | null;
+  currentLng: number | null;
+  isReady: boolean;
 
+  init: () => Promise<void>;
   setCurrentSiteName: (name: string) => void;
+  setCurrentLocation: (lat: number, lng: number) => void;
 
-  checkIn: () => void;
-  checkOut: () => void;
-  clearRecords: () => void;
+  checkIn: () => Promise<void>;
+  checkOut: () => Promise<void>;
+  clearRecords: () => Promise<void>;
 
-  markAsSynced: (checkInTime: string) => void;
+  markAsSynced: (checkInTime: string) => Promise<void>;
 
   isMarkedToday: () => boolean;
   isCheckedInToday: () => boolean;
-
   weeklyCount: () => number;
   weeklyHours: () => number;
 }
 
-// Single IST-aware date helper — used everywhere in this file
 function getTodayISO() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
+
+function hoursBetween(start: string, end: string | null): number {
+  if (!end) return 0;
+  const diff = new Date(end).getTime() - new Date(start).getTime();
+  return Math.round((diff / (1000 * 60 * 60)) * 10) / 10;
 }
 
 function getWeekDates() {
@@ -49,7 +62,6 @@ function getWeekDates() {
 
   const base = new Date(year, month, day);
   const dow = base.getDay();
-
   const monday = new Date(base);
   monday.setDate(base.getDate() - ((dow + 6) % 7));
 
@@ -64,97 +76,135 @@ function getWeekDates() {
   });
 }
 
-export const hoursBetween = (start: string, end: string | null): number => {
-  if (!end) return 0;
-  const diff = new Date(end).getTime() - new Date(start).getTime();
-  return Math.round((diff / (1000 * 60 * 60)) * 10) / 10;
-};
+export const useAttendanceStore = create<AttendanceState>((set, get) => ({
+  records: [],
+  currentSiteName: null,
+  currentLat: null,
+  currentLng: null,
+  isReady: false,
 
-export const useAttendanceStore = create<AttendanceState>()(
-  persist(
-    (set, get) => ({
-      records: [],
-      currentSiteName: null,
+  init: async () => {
+    const db = await getDb();
+    const rows = (await db.getAllAsync(
+      "SELECT * FROM attendance_records ORDER BY check_in_time DESC",
+    )) as AttendanceRow[];
 
-      setCurrentSiteName: (name: string) => set({ currentSiteName: name }),
+    set({
+      records: rows.map((r) => ({
+        id: r.id,
+        date: r.date,
+        checkInTime: r.check_in_time,
+        checkOutTime: r.check_out_time,
+        siteName: r.site_name,
+        latitude: r.latitude,
+        longitude: r.longitude,
+        isSynced: r.is_synced === 1,
+        syncStatus: r.sync_status as "pending" | "synced" | "error",
+      })),
+      isReady: true,
+    });
+  },
 
-      checkIn: () => {
-        // Uses module-level getTodayISO — IST-aware, no duplicate
-        const siteName = get().currentSiteName ?? "Unknown Site";
-        set((state) => ({
-          records: [
-            ...state.records,
-            {
-              date: getTodayISO(),
-              checkInTime: new Date().toISOString(),
-              checkOutTime: null,
-              siteName,
-              isSynced: false,
-            },
-          ],
-        }));
-      },
+  setCurrentSiteName: (name) => set({ currentSiteName: name }),
+  setCurrentLocation: (lat, lng) => set({ currentLat: lat, currentLng: lng }),
 
-      checkOut: () => {
-        const today = getTodayISO();
-        const records = [...get().records];
-        const lastOpenIndex = records
-          .map((r, i) => ({ r, i }))
-          .filter(({ r }) => r.date === today && !r.checkOutTime)
-          .at(-1)?.i;
+  checkIn: async () => {
+    console.log("CHECKIN STARTED");
+    const db = await getDb();
+    console.log("DB OPENED");
+    const now = new Date().toISOString();
+    const siteName = get().currentSiteName ?? "Unknown Site";
 
-        if (lastOpenIndex === undefined) return;
+    await db.runAsync(
+      `INSERT INTO attendance_records
+       (date, check_in_time, check_out_time, site_name, latitude, longitude, is_synced, sync_status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        getTodayISO(),
+        now,
+        null,
+        siteName,
+        get().currentLat,
+        get().currentLng,
+        0,
+        "pending",
+        now,
+        now,
+      ],
+    );
+    console.log("INSERT SUCCESS");
+    await get().init();
+    console.log("STORE RELOADED");
+  },
 
-        records[lastOpenIndex] = {
-          ...records[lastOpenIndex],
-          checkOutTime: new Date().toISOString(),
-        };
-        set({ records });
-      },
+  checkOut: async () => {
+    const db = await getDb();
+    const today = getTodayISO();
 
-      clearRecords: () => set({ records: [] }),
+    const latest = await db.getFirstAsync<{ id: number }>(
+      `SELECT id FROM attendance_records
+       WHERE date = ? AND check_out_time IS NULL
+       ORDER BY check_in_time DESC
+       LIMIT 1`,
+      [today],
+    );
 
-      markAsSynced: (checkInTime: string) => {
-        set((state) => ({
-          records: state.records.map((record) =>
-            record.checkInTime === checkInTime
-              ? { ...record, isSynced: true }
-              : record,
-          ),
-        }));
-      },
+    if (!latest) return;
 
-      isMarkedToday: () => get().records.some((r) => r.date === getTodayISO()),
+    const now = new Date().toISOString();
+    await db.runAsync(
+      `UPDATE attendance_records
+        SET check_out_time = ?,
+            updated_at = ?,
+            is_synced = 0,
+            sync_status = 'pending'
+        WHERE id = ?`,
+      [now, now, latest.id],
+    );
 
-      isCheckedInToday: () =>
-        get().records.some((r) => r.date === getTodayISO() && !r.checkOutTime),
+    await get().init();
+  },
 
-      weeklyCount: () => {
-        const weekDates = getWeekDates();
-        const daysWithRecords = new Set(
-          get()
-            .records.filter((r) => weekDates.includes(r.date))
-            .map((r) => r.date),
-        );
-        return daysWithRecords.size;
-      },
+  clearRecords: async () => {
+    const db = await getDb();
+    await db.runAsync(`DELETE FROM attendance_records`);
+    await get().init();
+  },
 
-      weeklyHours: () => {
-        const weekDates = getWeekDates();
+  markAsSynced: async (checkInTime: string) => {
+    const db = await getDb();
+    const now = new Date().toISOString();
 
-        const total = get()
-          .records.filter((r) => weekDates.includes(r.date))
-          .reduce(
-            (sum, r) => sum + hoursBetween(r.checkInTime, r.checkOutTime),
-            0,
-          );
+    await db.runAsync(
+      `UPDATE attendance_records
+       SET is_synced = 1, sync_status = 'synced', updated_at = ?
+       WHERE check_in_time = ?`,
+      [now, checkInTime],
+    );
 
-        return Number(total.toFixed(2));
-      },
-    }),
-    {
-      name: "attendance-storage-v2",
-      storage: createJSONStorage(() => AsyncStorage),
-    },
-  ),
-);
+    await get().init();
+  },
+
+  isMarkedToday: () => get().records.some((r) => r.date === getTodayISO()),
+
+  isCheckedInToday: () =>
+    get().records.some((r) => r.date === getTodayISO() && !r.checkOutTime),
+
+  weeklyCount: () => {
+    const weekDates = getWeekDates();
+    const daysWithRecords = new Set(
+      get()
+        .records.filter((r) => weekDates.includes(r.date))
+        .map((r) => r.date),
+    );
+    return daysWithRecords.size;
+  },
+
+  weeklyHours: () => {
+    const weekDates = getWeekDates();
+    const total = get()
+      .records.filter((r) => weekDates.includes(r.date))
+      .reduce((sum, r) => sum + hoursBetween(r.checkInTime, r.checkOutTime), 0);
+    return Number(total.toFixed(2));
+  },
+}));
