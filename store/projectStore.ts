@@ -1,4 +1,4 @@
-import { useAttendanceStore } from "@/store/attendanceStore";
+import { hoursBetween, useAttendanceStore } from "@/store/attendanceStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -35,21 +35,6 @@ export interface SessionSummary {
   hours: number;
 }
 
-export interface WeeklySummary {
-  totalCompletedHours: number;
-  totalAssignedHours: number;
-  totalRemainingHours: number;
-  overallProgressPercent: number;
-  availableWeeklyHours: number;
-  weeklyLimitReached: boolean;
-}
-
-function hoursBetween(start: string, end: string | null): number {
-  if (!end) return 0;
-  const diff = new Date(end).getTime() - new Date(start).getTime();
-  return Math.round((diff / (1000 * 60 * 60)) * 10) / 10;
-}
-
 function computeStatus(completed: number, assigned: number): ProjectStatus {
   if (completed === 0) return "pending";
   if (completed >= assigned) return "completed";
@@ -61,21 +46,25 @@ function deriveProject(
   completedHours: number,
   sessions: SessionSummary[],
 ): ProjectWithDerived {
+  const roundedCompletedHours = Number(completedHours.toFixed(1));
+
   const progressPercent =
     project.assignedHours > 0
       ? Math.min(
           100,
-          Math.round((completedHours / project.assignedHours) * 100),
+          Math.round((roundedCompletedHours / project.assignedHours) * 100),
         )
       : 0;
 
   return {
     ...project,
-    completedHours,
+    completedHours: roundedCompletedHours,
     sessions,
     progressPercent,
-    remainingHours: Math.max(0, project.assignedHours - completedHours),
-    status: computeStatus(completedHours, project.assignedHours),
+    remainingHours: Number(
+      Math.max(0, project.assignedHours - roundedCompletedHours).toFixed(1),
+    ),
+    status: computeStatus(roundedCompletedHours, project.assignedHours),
   };
 }
 
@@ -95,8 +84,6 @@ interface ProjectStore {
 
   // Reads attendance store and derives all computed fields
   getAllProjectsWithDerived: () => ProjectWithDerived[];
-
-  getWeeklySummary: () => WeeklySummary;
 }
 
 export const useProjectStore = create<ProjectStore>()(
@@ -156,22 +143,22 @@ export const useProjectStore = create<ProjectStore>()(
 
         return projects.map((project) => {
           // All attendance sessions for this site
-          const siteSessions = attendanceRecords.filter(
-            (r) => r.siteName === project.siteName,
-          );
-
-          // Build per-session summary
-          const sessions: SessionSummary[] = siteSessions.map((r) => ({
-            date: r.date,
-            checkInTime: r.checkInTime,
-            checkOutTime: r.checkOutTime,
-            hours: hoursBetween(r.checkInTime, r.checkOutTime),
-          }));
+          const siteSessions = attendanceRecords
+            .filter((r) => r.siteName === project.siteName)
+            .map((r) => ({
+              date: r.date,
+              checkInTime: r.checkInTime,
+              checkOutTime: r.checkOutTime,
+              hours: hoursBetween(r.checkInTime, r.checkOutTime),
+            }));
 
           // Sum all completed (checked-out) hours for this site
-          const completedHours = sessions.reduce((sum, s) => sum + s.hours, 0);
+          const completedHours = siteSessions.reduce(
+            (sum, s) => sum + s.hours,
+            0,
+          );
 
-          return deriveProject(project, completedHours, sessions);
+          return deriveProject(project, completedHours, siteSessions);
         });
       },
 

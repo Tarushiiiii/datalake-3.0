@@ -64,11 +64,11 @@ function getWeekDates() {
   });
 }
 
-function hoursBetween(start: string, end: string | null): number {
+export const hoursBetween = (start: string, end: string | null): number => {
   if (!end) return 0;
   const diff = new Date(end).getTime() - new Date(start).getTime();
   return Math.round((diff / (1000 * 60 * 60)) * 10) / 10;
-}
+};
 
 export const useAttendanceStore = create<AttendanceState>()(
   persist(
@@ -141,12 +141,15 @@ export const useAttendanceStore = create<AttendanceState>()(
 
       weeklyHours: () => {
         const weekDates = getWeekDates();
-        return get()
+
+        const total = get()
           .records.filter((r) => weekDates.includes(r.date))
           .reduce(
             (sum, r) => sum + hoursBetween(r.checkInTime, r.checkOutTime),
             0,
           );
+
+        return Number(total.toFixed(2));
       },
     }),
     {
