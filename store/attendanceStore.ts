@@ -1,6 +1,7 @@
 // store/attendanceStore.ts
 import { create } from "zustand";
 import { getDb, type AttendanceRow } from "@/lib/db";
+import { useProjectStore } from "@/store/projectStore";
 
 export interface DayRecord {
   id: number;
@@ -108,74 +109,65 @@ export const useAttendanceStore = create<AttendanceState>((set, get) => ({
   setCurrentSiteName: (name) => set({ currentSiteName: name }),
   setCurrentLocation: (lat, lng) => set({ currentLat: lat, currentLng: lng }),
 
-checkIn: async () => {
-  try {
-    console.log("CHECKIN STARTED");
+  checkIn: async () => {
+    try {
+      console.log("CHECKIN STARTED");
 
-    const db = await getDb();
+      const db = await getDb();
 
-    console.log("DB OPENED");
+      console.log("DB OPENED");
 
-    const now = new Date().toISOString();
+      const now = new Date().toISOString();
 
-    const siteName =
-      get().currentSiteName ?? "Unknown Site";
+      const siteName = get().currentSiteName ?? "Unknown Site";
+      const lat = typeof get().currentLat === "number" ? get().currentLat : 0;
+      const lng = typeof get().currentLng === "number" ? get().currentLng : 0;
 
-    const lat =
-      typeof get().currentLat === "number"
-        ? get().currentLat
-        : 0;
+      console.log("INSERT DATA", {
+        date: getTodayISO(),
+        now,
+        siteName,
+        lat,
+        lng,
+      });
 
-    const lng =
-      typeof get().currentLng === "number"
-        ? get().currentLng
-        : 0;
+      await db.execAsync(`
+        INSERT INTO attendance_records
+        (date, check_in_time, site_name, latitude, longitude, is_synced, sync_status, created_at, updated_at)
+        VALUES
+        (
+          '${getTodayISO()}',
+          '${now}',
+          '${siteName.replace(/'/g, "''")}',
+          ${lat},
+          ${lng},
+          0,
+          'pending',
+          '${now}',
+          '${now}'
+        );
+      `);
 
-    console.log("INSERT DATA", {
-      date: getTodayISO(),
-      now,
-      siteName,
-      lat,
-      lng,
-    });
+      console.log("INSERT SUCCESS");
 
-    await db.execAsync(`
-      INSERT INTO attendance_records
-      (
-        date,
-        check_in_time,
-        site_name,
-        latitude,
-        longitude,
-        is_synced,
-        sync_status,
-        created_at,
-        updated_at
-      )
-      VALUES
-      (
-        '${getTodayISO()}',
-        '${now}',
-        '${siteName.replace(/'/g, "''")}',
-        ${lat},
-        ${lng},
-        0,
-        'pending',
-        '${now}',
-        '${now}'
-      );
-    `);
+      // ── Create a project entry for this site if one doesn't exist yet ──
+      await useProjectStore.getState().upsertProjectFromAttendance({
+        siteName,
+        location: siteName,
+        latitude: typeof lat === "number" ? lat : undefined,
+        longitude: typeof lng === "number" ? lng : undefined,
+      });
 
-    console.log("INSERT SUCCESS");
+      console.log("PROJECT UPSERTED");
 
-    await get().init();
+      await get().init();
 
-    console.log("STORE RELOADED");
-  } catch (error) {
-    console.log("FULL CHECKIN ERROR:", error);
-    throw error;
-  }
-},
+      console.log("STORE RELOADED");
+    } catch (error) {
+      console.log("FULL CHECKIN ERROR:", error);
+      throw error;
+    }
+  },
 
   checkOut: async () => {
     const db = await getDb();
