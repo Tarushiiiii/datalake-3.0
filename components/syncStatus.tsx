@@ -27,17 +27,18 @@ const SyncStatus = () => {
     [records],
   );
   useEffect(() => {
-  const syncData = async () => {
-    if (
-      !isConnected ||
-      pendingRecords.length === 0 ||
-      syncingRef.current
-    ) {
-      return;
-    }
+  if (
+    !isConnected ||
+    pendingRecords.length === 0 ||
+    syncingRef.current
+  ) {
+    return;
+  }
 
+  syncingRef.current = true;
+
+  const syncData = async () => {
     try {
-      syncingRef.current = true;
       setIsSyncing(true);
 
       console.log(
@@ -45,6 +46,8 @@ const SyncStatus = () => {
       );
 
       await syncPendingAttendance();
+
+      await useAttendanceStore.getState().init();
 
       console.log("Sync completed");
     } catch (error) {
@@ -57,11 +60,6 @@ const SyncStatus = () => {
 
   syncData();
 }, [isConnected, pendingRecords.length]);
-console.log(
-  "SYNC STATUS",
-  isConnected,
-  pendingRecords.length
-);
 
   const status = useMemo(() => {
     if (!isConnected) {
