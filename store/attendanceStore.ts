@@ -108,34 +108,74 @@ export const useAttendanceStore = create<AttendanceState>((set, get) => ({
   setCurrentSiteName: (name) => set({ currentSiteName: name }),
   setCurrentLocation: (lat, lng) => set({ currentLat: lat, currentLng: lng }),
 
-  checkIn: async () => {
+checkIn: async () => {
+  try {
     console.log("CHECKIN STARTED");
-    const db = await getDb();
-    console.log("DB OPENED");
-    const now = new Date().toISOString();
-    const siteName = get().currentSiteName ?? "Unknown Site";
 
-    await db.runAsync(
-      `INSERT INTO attendance_records
-       (date, check_in_time, check_out_time, site_name, latitude, longitude, is_synced, sync_status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        getTodayISO(),
-        now,
-        null,
-        siteName,
-        get().currentLat,
-        get().currentLng,
+    const db = await getDb();
+
+    console.log("DB OPENED");
+
+    const now = new Date().toISOString();
+
+    const siteName =
+      get().currentSiteName ?? "Unknown Site";
+
+    const lat =
+      typeof get().currentLat === "number"
+        ? get().currentLat
+        : 0;
+
+    const lng =
+      typeof get().currentLng === "number"
+        ? get().currentLng
+        : 0;
+
+    console.log("INSERT DATA", {
+      date: getTodayISO(),
+      now,
+      siteName,
+      lat,
+      lng,
+    });
+
+    await db.execAsync(`
+      INSERT INTO attendance_records
+      (
+        date,
+        check_in_time,
+        site_name,
+        latitude,
+        longitude,
+        is_synced,
+        sync_status,
+        created_at,
+        updated_at
+      )
+      VALUES
+      (
+        '${getTodayISO()}',
+        '${now}',
+        '${siteName.replace(/'/g, "''")}',
+        ${lat},
+        ${lng},
         0,
-        "pending",
-        now,
-        now,
-      ],
-    );
+        'pending',
+        '${now}',
+        '${now}'
+      );
+    `);
+
     console.log("INSERT SUCCESS");
+
     await get().init();
+
     console.log("STORE RELOADED");
-  },
+  } catch (error) {
+    console.log("FULL CHECKIN ERROR:", error);
+    throw error;
+  }
+},
 
   checkOut: async () => {
     const db = await getDb();
