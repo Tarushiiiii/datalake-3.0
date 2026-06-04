@@ -4,7 +4,7 @@
  * Production-ready service layer for the AI attendance backend.
  *
  * Key points:
- *  - HeadMovementResult now carries `stage` — the backend drives the UI stage
+ *  - HeadMovementResult carries `stage` — backend drives the UI stage
  *    sequence, not a local frame counter.
  *  - Session ID injected into every request.
  *  - Exponential-backoff retry on network errors.
@@ -23,30 +23,20 @@
  */
 export const BASE_URL = process.env.BASE_URL || "http://192.168.29.102:8000";
 
-/** Initial request timeout (ms). Adaptive logic may lower this at runtime. */
 const REQUEST_TIMEOUT_MS = 8_000;
-
-/** Max retries per frame send (with exponential backoff). */
 const MAX_SEND_RETRIES = 2;
-
-/** Base delay (ms) for exponential backoff: 200 → 400 → 800 */
 const BACKOFF_BASE_MS = 200;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /**
  * HEAD MOVEMENT
- * The backend is a state machine that drives the stage sequence.
- * It returns the *next* stage the client should display.
- *
  * Backend stage values (from head_movement_service.py):
  *   "look_straight" | "turn_left" | "center" | "turn_right" | "final_center" | "verified"
- *
  * success === true only when stage === "verified" and liveness passes.
  */
 export interface HeadMovementResult {
   success: boolean;
-  /** The stage the backend has advanced to — use this to update the UI. */
   stage?:
     | "look_straight"
     | "turn_left"
@@ -202,11 +192,8 @@ async function postFrame<T>(
 /**
  * STEP 1 — Head Movement
  * POST /head-movement
- * Response: { success, stage, message, confidence? }
- *
- * The backend is a state machine per session_id. It advances through:
- * look_straight → turn_left → center → turn_right → final_center → verified
- * success === true only at the "verified" transition.
+ * Backend state machine advances through:
+ *   look_straight → turn_left → center → turn_right → final_center → verified
  */
 export async function sendHeadMovementFrame(
   base64Frame: string,
@@ -227,7 +214,6 @@ export async function sendHeadMovementFrame(
 /**
  * STEP 2 — Blink Detection
  * POST /blink-detection
- * Response: { success, blink_count?, message? }
  */
 export async function sendBlinkDetectionFrame(
   base64Frame: string,
@@ -248,7 +234,6 @@ export async function sendBlinkDetectionFrame(
 /**
  * STEP 3 — Face Recognition
  * POST /face-recognition
- * Response: { matched, confidence, user_id?, message? }
  */
 export async function sendFaceRecognitionFrame(
   base64Frame: string,

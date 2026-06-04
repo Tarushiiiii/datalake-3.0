@@ -3,10 +3,8 @@
  *
  * Core verification orchestrator.
  *
- * Head movement stage is now driven entirely by the backend response field
- * `stage` (from head_movement_service.py). The old local frame-counter
- * approach is removed — the backend is the single source of truth for
- * which stage the user is on.
+ * Head movement stage is driven entirely by the backend response field `stage`
+ * (from head_movement_service.py). The backend is the single source of truth.
  *
  * Stage flow (backend drives):
  *   look_straight → turn_left → center → turn_right → final_center → verified
@@ -65,7 +63,6 @@ interface UseMLVerificationOptions {
 
 // ─── Stage helpers ────────────────────────────────────────────────────────────
 
-/** Human-readable instruction for each backend-reported stage */
 const STAGE_INSTRUCTIONS: Record<string, string> = {
   look_straight: "Look straight at the camera",
   turn_left: "Turn your head LEFT",
@@ -85,10 +82,6 @@ function toUiStage(backendStage?: string): HeadMovementStage {
   return backendStage as HeadMovementStage;
 }
 
-/**
- * The backend advances stage by one on each successful frame.
- * There are 5 transitions before verified, so progress = transitions / 5 * 100.
- */
 const STAGE_ORDER = [
   "look_straight",
   "turn_left",
@@ -293,10 +286,17 @@ export function useMLVerification({
         safeSetStatus({ isSending: false, lastErrorKind: errorKind as any });
 
         if (data && isSuccess(data)) {
+          // Step fully complete
           successCountRef.current += 1;
           retryCountRef.current = 0;
           onStepSuccess(data);
-        } else {
+        } else if (
+          !data ||
+          errorKind === "timeout" ||
+          errorKind === "server" ||
+          errorKind === "network"
+        ) {
+          // Real error — no response or HTTP failure. Count toward retry limit.
           retryCountRef.current += 1;
           if (retryCountRef.current >= maxRetries) {
             clearAllTimers();
@@ -309,6 +309,11 @@ export function useMLVerification({
             });
             onFailureRef.current(msg);
           }
+        }
+        // else: data returned but isSuccess===false → valid in-progress response
+        // (e.g. head movement intermediate stage). Reset retries and keep polling.
+        else {
+          retryCountRef.current = 0;
         }
       }, frameIntervalMs);
     },
@@ -333,9 +338,6 @@ export function useMLVerification({
     );
   }, [runStep, safeSetStatus]);
 
-  // ── Blink Detection ────────────────────────────────────────────────────────
-  // Responsive 3-phase prompt driven by local blink counter.
-  // The hook tracks blinks from successful frames; BlinkEyes renders dots.
   const startBlinkDetection = useCallback(() => {
     let blinksSoFar = 0;
     safeSetStatus({ blinkCount: 0 });
@@ -362,17 +364,11 @@ export function useMLVerification({
   }, [runStep, startFaceRecognition, safeSetStatus]);
 
   // ── Head Movement ──────────────────────────────────────────────────────────
-  //
-  // The backend (head_movement_service.py) is a per-session state machine.
-  // Each frame response carries:
-  //   { success: bool, stage: string, message?: string, confidence?: number }
-  //
-  // success === true  →  stage === "verified"  →  advance to blink detection
-  // success === false →  stage = next expected stage → update UI and keep polling
-  //
-  // This replaces the old local frame-counter approach entirely.
+  // Backend (head_movement_service.py) is a per-session state machine.
+  // Each frame response: { success, stage, message?, confidence? }
+  // success === true → stage === "verified" → advance to blink detection
+  // success === false → stage = next expected stage → update UI, keep polling
   const startHeadMovement = useCallback(() => {
-    // Set initial UI stage before any frames are sent
     safeSetStatus({
       headMovementStage: "look_straight",
       instruction: STAGE_INSTRUCTIONS.look_straight,
@@ -384,26 +380,17 @@ export function useMLVerification({
       STAGE_INSTRUCTIONS.look_straight,
       sendHeadMovementFrame,
       (r) => {
-        // Update UI stage and instruction from every backend response,
-        // whether success or not — this keeps the card in sync with the
-        // actual backend state machine.
+        // Sync UI stage from every backend response (success or not)
         if (r.stage) {
-          const uiStage = toUiStage(r.stage);
-          const uiInstr = STAGE_INSTRUCTIONS[r.stage] ?? r.message ?? "";
-          const progress = headMovementProgress(r.stage);
-
           safeSetStatus({
-            headMovementStage: uiStage,
-            instruction: uiInstr,
-            stepProgress: progress,
+            headMovementStage: toUiStage(r.stage),
+            instruction: STAGE_INSTRUCTIONS[r.stage] ?? r.message ?? "",
+            stepProgress: headMovementProgress(r.stage),
           });
         }
-
-        // success === true only when backend says stage === "verified"
         return !!r.success;
       },
       () => {
-        // Head movement complete → start blink detection after brief pause
         setTimeout(() => startBlinkDetection(), 500);
       },
     );

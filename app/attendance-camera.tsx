@@ -1,5 +1,5 @@
 /**
- * frontend/apps/attendance-camera.tsx
+ * frontend/apps/attendance-camera/index.tsx
  *
  * Full-screen camera verification screen.
  *
@@ -8,9 +8,14 @@
  * Notes:
  *  - HeadMovement stage is backend-driven (no local frame counter).
  *  - BlinkEyes shows dot progress from local blink count.
- *  - confidence from backend is already 0–100; displayed directly.
+ *  - confidence from backend is 0–100; displayed directly.
  *  - animateShutter={false} prevents shutter flash on every frame capture.
  *  - checkedInRef prevents stale closure in the async success handler.
+ *
+ * Import paths are relative to this file's location:
+ *   ../../hooks/useMLVerification
+ *   ../../components/headMovement
+ *   ../../components/blinkEyes
  */
 
 import { useAttendanceStore } from "@/store/attendanceStore";
@@ -31,8 +36,8 @@ import {
   useMLVerification,
   VerificationStep,
 } from "../hooks/useMLVerification";
-import HeadMovement from "@/components/headMovement";
-import BlinkEyes from "@/components/blinkEyes";
+import HeadMovement from "../components/headMovement";
+import BlinkEyes from "../components/blinkEyes";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -237,7 +242,6 @@ export default function AttendanceCamera() {
   const checkOut = useAttendanceStore((s) => s.checkOut);
   const isCheckedInToday = useAttendanceStore((s) => s.isCheckedInToday());
 
-  // Ref so the async success handler never reads a stale value
   const checkedInRef = useRef(isCheckedInToday);
   useEffect(() => {
     checkedInRef.current = isCheckedInToday;
@@ -292,75 +296,41 @@ export default function AttendanceCamera() {
     return () => loop.stop();
   }, []);
 
-  // ── ML hook ───────────────────────────────────────────────────────────────
+  // ── ML Verification hook ───────────────────────────────────────────────────
   const handleSuccess = useCallback(
-    async (confidence: number) => {
-      try {
-        if (checkedInRef.current) {
-          await checkOut();
-        } else {
-          await checkIn();
-        }
-
-        const action = checkedInRef.current ? "Checked Out" : "Checked In";
-        // confidence from backend is 0–100 (float); round for display
-        Alert.alert(
-          `${action} ✓`,
-          `Face verified (${confidence.toFixed(1)}% confidence)`,
-          [{ text: "OK", onPress: () => router.replace("/(tabs)") }],
-        );
-      } catch {
-        Alert.alert("Error", "Failed to save attendance");
+    (confidence: number) => {
+      if (checkedInRef.current) {
+        checkOut();
+        Alert.alert("Checked Out ✓", `Confidence: ${confidence.toFixed(1)}%`, [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      } else {
+        checkIn();
+        Alert.alert("Checked In ✓", `Confidence: ${confidence.toFixed(1)}%`, [
+          { text: "OK", onPress: () => router.back() },
+        ]);
       }
     },
     [checkIn, checkOut],
   );
 
   const handleFailure = useCallback((reason: string) => {
-    Alert.alert("Verification Failed", reason, [
-      {
-        text: "Cancel",
-        style: "cancel",
-        onPress: () => router.replace("/(tabs)"),
-      },
-    ]);
+    console.warn("[AttendanceCamera] verification failed:", reason);
   }, []);
 
   const { status, cameraRef, startVerification, reset } = useMLVerification({
     onSuccess: handleSuccess,
     onFailure: handleFailure,
-    frameIntervalMs: 700,
-    maxRetries: 12,
-    stepTimeoutSecs: stepTimeoutSecs,
+    stepTimeoutSecs,
   });
 
-  // Show failure alert with retry / cancel options
+  // Auto-start once camera is ready and permission is granted
   useEffect(() => {
-    if (status.step === "failed") {
-      Alert.alert(
-        "Verification Failed",
-        status.errorMessage || "Verification unsuccessful",
-        [
-          { text: "Try Again", onPress: reset },
-          {
-            text: "Cancel",
-            style: "cancel",
-            onPress: () => router.replace("/(tabs)"),
-          },
-        ],
-      );
+    if (cameraReady && status.step === "idle") {
+      startVerification();
     }
-  }, [status.step]);
+  }, [cameraReady]);
 
-  // Auto-start once permission granted and camera ready
-  useEffect(() => {
-    if (permission?.granted && cameraReady && status.step === "idle") {
-      const t = setTimeout(() => startVerification(), 400);
-      return () => clearTimeout(t);
-    }
-  }, [permission?.granted, cameraReady, status.step]);
-
-  // ── Permission screens ─────────────────────────────────────────────────────
   if (!permission) return <View style={styles.root} />;
 
   if (!permission.granted) {
@@ -442,7 +412,6 @@ export default function AttendanceCamera() {
       <View style={styles.card}>
         <StepStrip current={status.step} />
 
-        {/* Step icon */}
         <Text style={[styles.stepIcon, { color: accent }]}>
           {STEP_ICONS[status.step]}
         </Text>
@@ -450,41 +419,36 @@ export default function AttendanceCamera() {
         {/* Instruction — driven by backend stage via useMLVerification */}
         <Text style={styles.instruction}>{status.instruction}</Text>
 
-        {/* Sending indicator */}
         {status.isSending && (
           <Text style={styles.sendingLabel}>Analysing frame…</Text>
         )}
 
-        {/* Progress bar */}
         {!["idle", "success", "failed"].includes(status.step) && (
           <ProgressBar progress={status.stepProgress} color={accent} />
         )}
 
-        {/* ── Head movement prompt card — stage driven by backend ── */}
+        {/* Head movement prompt card — stage driven by backend */}
         {status.step === "head_movement" && (
           <View style={styles.stepCardWrapper}>
             <HeadMovement active stage={status.headMovementStage} />
           </View>
         )}
 
-        {/* ── Blink detection prompt card — dot progress driven by local blink count ── */}
+        {/* Blink detection prompt card — dot progress driven by local blink count */}
         {status.step === "blink_detection" && (
           <View style={styles.stepCardWrapper}>
             <BlinkEyes active blinkCount={status.blinkCount ?? 0} />
           </View>
         )}
 
-        {/* Network error banner */}
         <ErrorBanner kind={status.lastErrorKind} />
 
-        {/* Success confidence (backend returns 0–100 float) */}
         {status.step === "success" && status.confidence !== null && (
           <Text style={styles.confidenceBadge}>
             {status.confidence.toFixed(1)}% match
           </Text>
         )}
 
-        {/* Failure retry */}
         {status.step === "failed" && (
           <View style={styles.failureActions}>
             {status.errorMessage ? (
@@ -510,7 +474,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.42)",
   },
-
   guide: {
     position: "absolute",
     width: GUIDE_W,
@@ -528,7 +491,6 @@ const styles = StyleSheet.create({
     height: 2,
     opacity: 0.55,
   },
-
   corner: { position: "absolute", width: 22, height: 22, borderWidth: 3 },
   corner_tl: {
     top: -2,
@@ -558,7 +520,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     borderBottomRightRadius: 6,
   },
-
   topHud: {
     position: "absolute",
     top: 54,
@@ -584,7 +545,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
   },
-
   card: {
     position: "absolute",
     bottom: 0,
@@ -615,9 +575,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     textTransform: "uppercase",
   },
-
   stepCardWrapper: { width: "100%", marginTop: 14 },
-
   failureActions: { alignItems: "center", marginTop: 14, gap: 10 },
   errorMsg: {
     color: "rgba(255,255,255,0.5)",
@@ -632,7 +590,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   retryBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-
   permScreen: {
     flex: 1,
     backgroundColor: "#0a0a14",
