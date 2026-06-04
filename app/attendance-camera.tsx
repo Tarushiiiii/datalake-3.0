@@ -294,32 +294,64 @@ export default function AttendanceCamera() {
 
   // ── ML hook ───────────────────────────────────────────────────────────────
   const handleSuccess = useCallback(
-    (confidence: number) => {
+  async (confidence: number) => {
+    try {
       if (checkedInRef.current) {
-        checkOut();
+        console.log("CALLING CHECKOUT");
+
+        await checkOut();
+
+        console.log("CHECKOUT COMPLETED");
       } else {
-        checkIn();
+        console.log("CALLING CHECKIN");
+
+        await checkIn();
+
+        console.log("CHECKIN COMPLETED");
       }
-      const action = checkedInRef.current ? "Checked Out" : "Checked In";
+
+      const action = checkedInRef.current
+        ? "Checked Out"
+        : "Checked In";
+
       Alert.alert(
         `${action} ✓`,
         `Face verified (${Math.round(confidence * 100)}% confidence)`,
-        [{ text: "OK", onPress: () => router.replace("/(tabs)") }],
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/(tabs)"),
+          },
+        ]
       );
-    },
-    [checkIn, checkOut],
-  );
+    } catch (error) {
+      console.log("ATTENDANCE ERROR:", error);
 
-  const handleFailure = useCallback((reason: string) => {
-    Alert.alert("Verification Failed", reason, [
-      { text: "Try Again", onPress: reset },
-      {
-        text: "Cancel",
-        style: "cancel",
-        onPress: () => router.replace("/(tabs)"),
-      },
-    ]);
-  }, []);
+      Alert.alert(
+        "Error",
+        "Failed to save attendance"
+      );
+    }
+  },
+  [checkIn, checkOut]
+);
+
+  const handleFailure = useCallback(
+  (reason: string) => {
+    Alert.alert(
+      "Verification Failed",
+      reason,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => router.replace("/(tabs)"),
+        },
+      ]
+    );
+  },
+  []
+);
 
   const { status, cameraRef, startVerification, reset } = useMLVerification({
     onSuccess: handleSuccess,
@@ -329,7 +361,25 @@ export default function AttendanceCamera() {
     maxRetries: 12,
     stepTimeoutSecs: stepTimeoutSecs,
   });
-
+  useEffect(() => {
+  if (status.step === "failed") {
+    Alert.alert(
+      "Verification Failed",
+      status.errorMessage || "Verification unsuccessful",
+      [
+        {
+          text: "Try Again",
+          onPress: reset,
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => router.replace("/(tabs)"),
+        },
+      ]
+    );
+  }
+}, [status.step]);
   // Auto-start once permission granted
   useEffect(() => {
     if (permission?.granted && status.step === "idle") {
