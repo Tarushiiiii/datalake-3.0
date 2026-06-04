@@ -1,17 +1,3 @@
-// import BlinkEyes from "@/components/blinkEyes";
-// import FaceRecognition from "@/components/faceRecongition";
-// import HeadMovement from "@/components/headMovement";
-
-// export default function AttendancePage() {
-//   return (
-//     <>
-//       <HeadMovement />
-//       <BlinkEyes />
-//       <FaceRecognition />
-//     </>
-//   );
-// }
-
 /**
  * attendance.tsx
  *

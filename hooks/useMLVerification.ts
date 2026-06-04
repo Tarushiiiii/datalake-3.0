@@ -1,20 +1,22 @@
 /**
- * useMLVerification.ts — Production-optimised orchestration hook.
+ * frontend/hooks/useMLVerification.ts
  *
- * Key improvements over v1:
- *  - verificationSessionId (UUID) generated per session; sent with every frame
- *  - stepRef used in ALL interval callbacks — zero stale closures
- *  - mountedRef guards: no setState after unmount
- *  - AppState listener: pauses interval when app goes to background
- *  - Per-session step timeout (default 30 s) to prevent infinite loops
- *  - Adaptive JPEG quality via mlApi.adaptiveQuality
- *  - Consecutive-success counter resets on step transition (no bleed-over)
- *  - onSuccess / onFailure wrapped in refs so callers can swap them without re-creating the hook
- *  - Full interval cleanup on unmount
+ * Core verification orchestrator.
+ *
+ * Head movement stage is now driven entirely by the backend response field
+ * `stage` (from head_movement_service.py). The old local frame-counter
+ * approach is removed — the backend is the single source of truth for
+ * which stage the user is on.
+ *
+ * Stage flow (backend drives):
+ *   look_straight → turn_left → center → turn_right → final_center → verified
+ *
+ * success === true only when the backend returns stage === "verified".
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, AppStateStatus } from "react-native";
+
 import {
   adaptiveQuality,
   sendBlinkDetectionFrame,
@@ -32,44 +34,77 @@ export type VerificationStep =
   | "success"
   | "failed";
 
+export type HeadMovementStage =
+  | "look_straight"
+  | "turn_left"
+  | "center"
+  | "turn_right"
+  | "final_center"
+  | null;
+
 export interface VerificationStatus {
   step: VerificationStep;
   instruction: string;
-  /** 0–100, progress within the current step */
   stepProgress: number;
-  /** True while a frame request is in flight */
   isSending: boolean;
-  /** Populated after face recognition succeeds */
   confidence: number | null;
-  /** Human-readable terminal failure message */
   errorMessage: string | null;
-  /** Latest error category from the network layer */
   lastErrorKind: "timeout" | "server" | "network" | "none";
-  /** Seconds remaining before the current step auto-fails */
   stepTimeoutRemaining: number | null;
+  headMovementStage: HeadMovementStage;
+  blinkCount: number;
 }
 
 interface UseMLVerificationOptions {
   onSuccess: (confidence: number) => void;
   onFailure: (reason: string) => void;
-  /**
-   * Frame send interval in ms.
-   * 700 ms is a good balance for mobile 4G / WiFi.
-   * Drop to 500 ms on fast networks, raise to 1000 ms on slow ones.
-   */
   frameIntervalMs?: number;
-  /** Consecutive successful responses needed to advance a step. Default: 3 */
-  framesNeededForSuccess?: number;
-  /** Failed frames before the step is marked failed. Default: 12 */
   maxRetries?: number;
-  /**
-   * Seconds before a step auto-fails regardless of retries.
-   * Prevents infinite hang on a frozen backend. Default: 30 s.
-   */
   stepTimeoutSecs?: number;
 }
 
-// ─── UUID helper (no external dep) ───────────────────────────────────────────
+// ─── Stage helpers ────────────────────────────────────────────────────────────
+
+/** Human-readable instruction for each backend-reported stage */
+const STAGE_INSTRUCTIONS: Record<string, string> = {
+  look_straight: "Look straight at the camera",
+  turn_left: "Turn your head LEFT",
+  center: "Return to center",
+  turn_right: "Turn your head RIGHT",
+  final_center: "Hold still — look straight",
+  verified: "Identity verified ✓",
+};
+
+/**
+ * Maps the backend `stage` string to the HeadMovementStage union.
+ * "verified" is treated as "final_center" in the UI (step already done).
+ */
+function toUiStage(backendStage?: string): HeadMovementStage {
+  if (!backendStage) return null;
+  if (backendStage === "verified") return "final_center";
+  return backendStage as HeadMovementStage;
+}
+
+/**
+ * The backend advances stage by one on each successful frame.
+ * There are 5 transitions before verified, so progress = transitions / 5 * 100.
+ */
+const STAGE_ORDER = [
+  "look_straight",
+  "turn_left",
+  "center",
+  "turn_right",
+  "final_center",
+  "verified",
+] as const;
+
+function headMovementProgress(stage: string): number {
+  const idx = STAGE_ORDER.indexOf(stage as any);
+  if (idx <= 0) return 0;
+  return Math.round((idx / (STAGE_ORDER.length - 1)) * 100);
+}
+
+// ─── UUID ─────────────────────────────────────────────────────────────────────
 
 function generateUUID(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -85,7 +120,6 @@ export function useMLVerification({
   onSuccess,
   onFailure,
   frameIntervalMs = 700,
-  framesNeededForSuccess = 3,
   maxRetries = 12,
   stepTimeoutSecs = 30,
 }: UseMLVerificationOptions) {
@@ -99,24 +133,23 @@ export function useMLVerification({
     errorMessage: null,
     lastErrorKind: "none",
     stepTimeoutRemaining: null,
+    headMovementStage: null,
+    blinkCount: 0,
   });
 
-  // ── Refs (never cause re-renders; safe inside interval callbacks) ──────────
+  // ── Refs ───────────────────────────────────────────────────────────────────
+  const cameraRef = useRef<any>(null);
+  const mountedRef = useRef(true);
   const stepRef = useRef<VerificationStep>("idle");
-  const successCountRef = useRef(0);
-  const retryCountRef = useRef(0);
-  const sessionIdRef = useRef<string>(generateUUID());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stepCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const mountedRef = useRef(true);
-  const isPausedRef = useRef(false); // true when app is backgrounded
+  const successCountRef = useRef(0);
+  const retryCountRef = useRef(0);
+  const isPausedRef = useRef(false);
   const isCapturingRef = useRef(false);
+  const sessionIdRef = useRef(generateUUID());
 
-  /** Camera ref — passed back to the screen so it can bind CameraView */
-  const cameraRef = useRef<any>(null);
-
-  /** Keep latest callbacks in refs so changing them doesn't recreate the hook */
   const onSuccessRef = useRef(onSuccess);
   const onFailureRef = useRef(onFailure);
   useEffect(() => {
@@ -126,7 +159,7 @@ export function useMLVerification({
     onFailureRef.current = onFailure;
   }, [onFailure]);
 
-  // ── Lifecycle: cleanup on unmount ──────────────────────────────────────────
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -135,34 +168,23 @@ export function useMLVerification({
     };
   }, []);
 
-  // ── AppState: pause when app goes to background ────────────────────────────
   useEffect(() => {
-    const handleAppState = (nextState: AppStateStatus) => {
-      isPausedRef.current = nextState !== "active";
-    };
-    const sub = AppState.addEventListener("change", handleAppState);
+    const sub = AppState.addEventListener("change", (next: AppStateStatus) => {
+      isPausedRef.current = next !== "active";
+    });
     return () => sub.remove();
   }, []);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
-
   const safeSetStatus = useCallback((patch: Partial<VerificationStatus>) => {
-    if (mountedRef.current) {
-      setStatus((prev) => ({ ...prev, ...patch }));
-    }
+    if (!mountedRef.current) return;
+    setStatus((prev) => ({ ...prev, ...patch }));
   }, []);
 
-  async function clearAllTimers() {
+  function clearAllTimers() {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
-      if (isCapturingRef.current) return;
-
-      isCapturingRef.current = true;
-
-      const frame = await captureFrame();
-
-      isCapturingRef.current = false;
     }
     if (stepTimeoutRef.current) {
       clearTimeout(stepTimeoutRef.current);
@@ -174,14 +196,14 @@ export function useMLVerification({
     }
   }
 
-  /** Capture one JPEG frame. Quality is driven by adaptive bandwidth tracker. */
-  const captureFrame = useCallback(async (): Promise<string | null> => {
+  // ── Capture Frame ──────────────────────────────────────────────────────────
+  const captureFrame = useCallback(async () => {
     if (!cameraRef.current) return null;
     try {
       const photo = await cameraRef.current.takePictureAsync({
         base64: true,
-        quality: Math.min(adaptiveQuality.quality, 0.35), // 0.20 – 0.45 depending on latency
-        skipProcessing: true, // skip EXIF/orientation — saves ~30 ms
+        quality: Math.min(adaptiveQuality.quality, 0.42),
+        skipProcessing: true,
         exif: false,
         imageType: "jpg",
       });
@@ -191,29 +213,23 @@ export function useMLVerification({
     }
   }, []);
 
-  // ── Step timeout helpers ───────────────────────────────────────────────────
-
-  function startStepTimeout(instruction: string) {
-    // Clear any previous timeout
+  // ── Step Timeout ───────────────────────────────────────────────────────────
+  function startStepTimeout(label: string) {
     if (stepTimeoutRef.current) clearTimeout(stepTimeoutRef.current);
     if (stepCountdownRef.current) clearInterval(stepCountdownRef.current);
 
     let remaining = stepTimeoutSecs;
     safeSetStatus({ stepTimeoutRemaining: remaining });
 
-    // Countdown display (updates every second)
     stepCountdownRef.current = setInterval(() => {
       remaining -= 1;
-      if (mountedRef.current)
-        safeSetStatus({ stepTimeoutRemaining: remaining });
+      safeSetStatus({ stepTimeoutRemaining: remaining });
     }, 1000);
 
-    // Hard timeout
     stepTimeoutRef.current = setTimeout(() => {
-      if (stepCountdownRef.current) clearInterval(stepCountdownRef.current);
       clearAllTimers();
-      const msg = `Step timed out: ${instruction}. Please try again.`;
       stepRef.current = "failed";
+      const msg = `Step timed out: ${label}`;
       safeSetStatus({
         step: "failed",
         errorMessage: msg,
@@ -224,29 +240,7 @@ export function useMLVerification({
     }, stepTimeoutSecs * 1000);
   }
 
-  function clearStepTimeout() {
-    if (stepTimeoutRef.current) {
-      clearTimeout(stepTimeoutRef.current);
-      stepTimeoutRef.current = null;
-    }
-    if (stepCountdownRef.current) {
-      clearInterval(stepCountdownRef.current);
-      stepCountdownRef.current = null;
-    }
-    safeSetStatus({ stepTimeoutRemaining: null });
-  }
-
-  // ── Generic step runner ────────────────────────────────────────────────────
-
-  /**
-   * Runs a single verification step.
-   *
-   * @param step           The VerificationStep enum value for this step
-   * @param instruction    Text shown in the UI overlay
-   * @param sender         Function that sends one frame and returns a typed result
-   * @param isSuccess      Predicate — true if the backend accepted this frame
-   * @param onStepSuccess  Called once framesNeededForSuccess consecutive successes occur
-   */
+  // ── Generic Step Runner ────────────────────────────────────────────────────
   const runStep = useCallback(
     <T extends { success?: boolean; matched?: boolean; confidence?: number }>(
       step: VerificationStep,
@@ -258,7 +252,7 @@ export function useMLVerification({
       isSuccess: (result: T) => boolean,
       onStepSuccess: (result: T) => void,
     ) => {
-      // Reset step-level counters
+      clearAllTimers();
       stepRef.current = step;
       successCountRef.current = 0;
       retryCountRef.current = 0;
@@ -274,68 +268,40 @@ export function useMLVerification({
 
       startStepTimeout(instruction);
 
-      // Guard: don't stack intervals
-      async function clearAllTimers() {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-
-        if (stepTimeoutRef.current) {
-          clearTimeout(stepTimeoutRef.current);
-          stepTimeoutRef.current = null;
-        }
-
-        if (stepCountdownRef.current) {
-          clearInterval(stepCountdownRef.current);
-          stepCountdownRef.current = null;
-        }
-      }
-
       intervalRef.current = setInterval(async () => {
-        // ── Guards ──
-        if (stepRef.current !== step) return; // step already advanced
-        if (isPausedRef.current) return; // app is backgrounded
-        if (!mountedRef.current) return; // component unmounted
+        if (!mountedRef.current) return;
+        if (isPausedRef.current) return;
+        if (stepRef.current !== step) return;
+        if (isCapturingRef.current) return;
 
+        isCapturingRef.current = true;
         safeSetStatus({ isSending: true });
 
         const frame = await captureFrame();
-
         if (!frame) {
+          isCapturingRef.current = false;
           safeSetStatus({ isSending: false });
-          return; // camera not ready — skip this tick
+          return;
         }
 
         const { data, errorKind } = await sender(frame, sessionIdRef.current);
+        isCapturingRef.current = false;
 
-        if (!mountedRef.current || stepRef.current !== step) return; // unmounted or advanced mid-await
+        if (!mountedRef.current) return;
+        if (stepRef.current !== step) return;
 
         safeSetStatus({ isSending: false, lastErrorKind: errorKind as any });
 
         if (data && isSuccess(data)) {
           successCountRef.current += 1;
-          retryCountRef.current = 0; // reset failure streak on a success
-
-          const progress = Math.min(
-            Math.round(
-              (successCountRef.current / framesNeededForSuccess) * 100,
-            ),
-            100,
-          );
-          safeSetStatus({ stepProgress: progress });
-
-          if (successCountRef.current >= framesNeededForSuccess) {
-            clearAllTimers();
-            onStepSuccess(data);
-          }
+          retryCountRef.current = 0;
+          onStepSuccess(data);
         } else {
           retryCountRef.current += 1;
-
           if (retryCountRef.current >= maxRetries) {
             clearAllTimers();
             stepRef.current = "failed";
-            const msg = `Verification failed at: ${instruction}. Please try again.`;
+            const msg = `Verification failed at: ${instruction}`;
             safeSetStatus({
               step: "failed",
               errorMessage: msg,
@@ -346,16 +312,10 @@ export function useMLVerification({
         }
       }, frameIntervalMs);
     },
-    [
-      captureFrame,
-      framesNeededForSuccess,
-      maxRetries,
-      frameIntervalMs,
-      safeSetStatus,
-    ],
+    [captureFrame, frameIntervalMs, maxRetries, safeSetStatus],
   );
 
-  // ── Step chain (runs head → blink → face in sequence) ─────────────────────
+  // ── Step Chain ─────────────────────────────────────────────────────────────
 
   const startFaceRecognition = useCallback(() => {
     runStep(
@@ -365,6 +325,7 @@ export function useMLVerification({
       (r) => !!r.matched,
       (r) => {
         const confidence = r.confidence ?? 1;
+        clearAllTimers();
         stepRef.current = "success";
         safeSetStatus({ step: "success", confidence, stepProgress: 100 });
         onSuccessRef.current(confidence);
@@ -372,44 +333,99 @@ export function useMLVerification({
     );
   }, [runStep, safeSetStatus]);
 
+  // ── Blink Detection ────────────────────────────────────────────────────────
+  // Responsive 3-phase prompt driven by local blink counter.
+  // The hook tracks blinks from successful frames; BlinkEyes renders dots.
   const startBlinkDetection = useCallback(() => {
+    let blinksSoFar = 0;
+    safeSetStatus({ blinkCount: 0 });
+
     runStep(
       "blink_detection",
       "Blink 2–3 times naturally",
       sendBlinkDetectionFrame,
-      (r) => !!r.success,
-      () => startFaceRecognition(),
+      (r) => {
+        if (r.success) {
+          blinksSoFar += 1;
+          safeSetStatus({ blinkCount: blinksSoFar });
+          if (blinksSoFar === 1)
+            safeSetStatus({ instruction: "Good! Keep blinking…" });
+          else if (blinksSoFar === 2)
+            safeSetStatus({ instruction: "One more blink!" });
+        }
+        return !!r.success;
+      },
+      () => {
+        setTimeout(() => startFaceRecognition(), 500);
+      },
     );
-  }, [runStep, startFaceRecognition]);
+  }, [runStep, startFaceRecognition, safeSetStatus]);
 
+  // ── Head Movement ──────────────────────────────────────────────────────────
+  //
+  // The backend (head_movement_service.py) is a per-session state machine.
+  // Each frame response carries:
+  //   { success: bool, stage: string, message?: string, confidence?: number }
+  //
+  // success === true  →  stage === "verified"  →  advance to blink detection
+  // success === false →  stage = next expected stage → update UI and keep polling
+  //
+  // This replaces the old local frame-counter approach entirely.
   const startHeadMovement = useCallback(() => {
+    // Set initial UI stage before any frames are sent
+    safeSetStatus({
+      headMovementStage: "look_straight",
+      instruction: STAGE_INSTRUCTIONS.look_straight,
+      stepProgress: 0,
+    });
+
     runStep(
       "head_movement",
-      "Slowly turn your head left and right",
+      STAGE_INSTRUCTIONS.look_straight,
       sendHeadMovementFrame,
-      (r) => !!r.success,
-      () => startBlinkDetection(),
-    );
-  }, [runStep, startBlinkDetection]);
+      (r) => {
+        // Update UI stage and instruction from every backend response,
+        // whether success or not — this keeps the card in sync with the
+        // actual backend state machine.
+        if (r.stage) {
+          const uiStage = toUiStage(r.stage);
+          const uiInstr = STAGE_INSTRUCTIONS[r.stage] ?? r.message ?? "";
+          const progress = headMovementProgress(r.stage);
 
-  // ── Public interface ───────────────────────────────────────────────────────
+          safeSetStatus({
+            headMovementStage: uiStage,
+            instruction: uiInstr,
+            stepProgress: progress,
+          });
+        }
+
+        // success === true only when backend says stage === "verified"
+        return !!r.success;
+      },
+      () => {
+        // Head movement complete → start blink detection after brief pause
+        setTimeout(() => startBlinkDetection(), 500);
+      },
+    );
+  }, [runStep, startBlinkDetection, safeSetStatus]);
+
+  // ── Public API ─────────────────────────────────────────────────────────────
 
   const startVerification = useCallback(() => {
     clearAllTimers();
-    // New session = new UUID + fresh adaptive quality baseline
-    sessionIdRef.current = generateUUID();
     adaptiveQuality.reset();
+    sessionIdRef.current = generateUUID();
     startHeadMovement();
   }, [startHeadMovement]);
 
   const reset = useCallback(() => {
     clearAllTimers();
-    stepRef.current = "idle";
+    adaptiveQuality.reset();
+    sessionIdRef.current = generateUUID();
     successCountRef.current = 0;
     retryCountRef.current = 0;
-    sessionIdRef.current = generateUUID();
-    adaptiveQuality.reset();
-    setStatus({
+    stepRef.current = "idle";
+    safeSetStatus({
       step: "idle",
       instruction: "Ready",
       stepProgress: 0,
@@ -418,15 +434,16 @@ export function useMLVerification({
       errorMessage: null,
       lastErrorKind: "none",
       stepTimeoutRemaining: null,
+      headMovementStage: null,
+      blinkCount: 0,
     });
-  }, []);
+  }, [safeSetStatus]);
 
   return {
     status,
     cameraRef,
     startVerification,
     reset,
-    /** Expose session ID for debugging / logging in the screen */
     sessionId: sessionIdRef.current,
   };
 }

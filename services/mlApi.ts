@@ -1,16 +1,19 @@
 /**
- * mlApi.ts — Production-ready service layer for AI attendance backend.
+ * frontend/services/mlApi.ts
  *
- * Changes from v1:
- *  - Session ID injected into every request
- *  - Exponential backoff retry (network blips → auto-recover)
- *  - Adaptive quality: reduces JPEG quality if requests are consistently slow
- *  - Request deduplication: ignores in-flight duplicate calls per step
- *  - Centralised error categorisation (timeout / server / network)
- *  - All backend URLs in one place; swap BASE_URL for production deploy
+ * Production-ready service layer for the AI attendance backend.
+ *
+ * Key points:
+ *  - HeadMovementResult now carries `stage` — the backend drives the UI stage
+ *    sequence, not a local frame counter.
+ *  - Session ID injected into every request.
+ *  - Exponential-backoff retry on network errors.
+ *  - Adaptive JPEG quality based on rolling latency average.
+ *  - Request deduplication: ignores in-flight duplicate calls per step.
+ *  - Centralised error categorisation (timeout / server / network).
  */
 
-// ─── Config ──────────────────────────────────────────────────────────────────
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 /**
  * Replace with your FastAPI server URL:
@@ -18,9 +21,9 @@
  *   Railway  → "https://your-app.railway.app"
  *   ngrok    → "https://xxxx.ngrok.io"
  */
-export const BASE_URL = "http://192.168.29.102:8000";
+export const BASE_URL = process.env.BASE_URL || "http://192.168.29.102:8000";
 
-/** Initial request timeout. Adaptive logic may lower this at runtime. */
+/** Initial request timeout (ms). Adaptive logic may lower this at runtime. */
 const REQUEST_TIMEOUT_MS = 8_000;
 
 /** Max retries per frame send (with exponential backoff). */
@@ -31,9 +34,28 @@ const BACKOFF_BASE_MS = 200;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/**
+ * HEAD MOVEMENT
+ * The backend is a state machine that drives the stage sequence.
+ * It returns the *next* stage the client should display.
+ *
+ * Backend stage values (from head_movement_service.py):
+ *   "look_straight" | "turn_left" | "center" | "turn_right" | "final_center" | "verified"
+ *
+ * success === true only when stage === "verified" and liveness passes.
+ */
 export interface HeadMovementResult {
   success: boolean;
+  /** The stage the backend has advanced to — use this to update the UI. */
+  stage?:
+    | "look_straight"
+    | "turn_left"
+    | "center"
+    | "turn_right"
+    | "final_center"
+    | "verified";
   message?: string;
+  confidence?: number;
 }
 
 export interface BlinkDetectionResult {
@@ -56,9 +78,9 @@ export interface FramePayload {
   frame: string;
   /** ISO timestamp of capture */
   timestamp: string;
-  /** UUID for this verification session — lets the backend correlate frames */
+  /** UUID for this verification session */
   session_id: string;
-  /** Current step name — useful for backend logging / debugging */
+  /** Current step name — useful for backend logging */
   step: MLStep;
 }
 
@@ -70,12 +92,8 @@ export interface MLResult<T> {
   latencyMs: number;
 }
 
-// ─── Adaptive quality tracker ─────────────────────────────────────────────────
+// ─── Adaptive quality ─────────────────────────────────────────────────────────
 
-/**
- * Tracks rolling average latency and suggests a JPEG quality value (0.2–0.5).
- * Called by the camera hook — not exported to components.
- */
 class AdaptiveQuality {
   private samples: number[] = [];
   private readonly maxSamples = 6;
@@ -85,7 +103,6 @@ class AdaptiveQuality {
     if (this.samples.length > this.maxSamples) this.samples.shift();
   }
 
-  /** Returns 0.2–0.5 depending on avg latency. Lower latency → higher quality. */
   get quality(): number {
     if (this.samples.length < 2) return 0.35;
     const avg = this.samples.reduce((a, b) => a + b, 0) / this.samples.length;
@@ -104,7 +121,6 @@ export const adaptiveQuality = new AdaptiveQuality();
 
 // ─── In-flight deduplication ──────────────────────────────────────────────────
 
-/** Prevents stacking requests for the same step if the previous hasn't returned yet */
 const inFlight = new Set<MLStep>();
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -113,33 +129,22 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/**
- * Strips the data-URL prefix expo-camera sometimes prepends to base64 output.
- */
 export function stripDataUrlPrefix(base64: string): string {
   const idx = base64.indexOf(",");
   return idx !== -1 ? base64.slice(idx + 1) : base64;
 }
 
-/**
- * Core POST with:
- *  - AbortController timeout
- *  - Exponential backoff retries (network errors only, not 4xx)
- *  - Latency measurement for adaptive quality
- */
 async function postFrame<T>(
   endpoint: string,
   payload: FramePayload,
   step: MLStep,
 ): Promise<MLResult<T>> {
-  // Skip if a request for this step is already in flight
   if (inFlight.has(step)) {
     return { data: null, errorKind: "none", latencyMs: 0 };
   }
 
   inFlight.add(step);
   const t0 = Date.now();
-
   let attempt = 0;
 
   while (attempt <= MAX_SEND_RETRIES) {
@@ -175,7 +180,6 @@ async function postFrame<T>(
         return { data: null, errorKind: "timeout", latencyMs: Date.now() - t0 };
       }
 
-      // Network error — retry with backoff
       attempt += 1;
       if (attempt > MAX_SEND_RETRIES) {
         console.warn(
@@ -196,9 +200,13 @@ async function postFrame<T>(
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * STEP 1 — Head Movement Detection
+ * STEP 1 — Head Movement
  * POST /head-movement
- * Response: { success: boolean, message?: string }
+ * Response: { success, stage, message, confidence? }
+ *
+ * The backend is a state machine per session_id. It advances through:
+ * look_straight → turn_left → center → turn_right → final_center → verified
+ * success === true only at the "verified" transition.
  */
 export async function sendHeadMovementFrame(
   base64Frame: string,
@@ -219,7 +227,7 @@ export async function sendHeadMovementFrame(
 /**
  * STEP 2 — Blink Detection
  * POST /blink-detection
- * Response: { success: boolean, blink_count?: number, message?: string }
+ * Response: { success, blink_count?, message? }
  */
 export async function sendBlinkDetectionFrame(
   base64Frame: string,
@@ -240,7 +248,7 @@ export async function sendBlinkDetectionFrame(
 /**
  * STEP 3 — Face Recognition
  * POST /face-recognition
- * Response: { matched: boolean, confidence: number, user_id?: string }
+ * Response: { matched, confidence, user_id?, message? }
  */
 export async function sendFaceRecognitionFrame(
   base64Frame: string,
