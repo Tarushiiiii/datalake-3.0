@@ -1,12 +1,23 @@
-// lib/db.ts
 import * as SQLite from "expo-sqlite";
 
 let db: SQLite.SQLiteDatabase | null = null;
+let openingPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 export async function getDb() {
-  if (!db) {
-    db = await SQLite.openDatabaseAsync("datalake.db");
-    await db.execAsync(`
+  if (db) {
+    return db;
+  }
+
+  if (openingPromise) {
+    return openingPromise;
+  }
+
+  openingPromise = (async () => {
+    const database = await SQLite.openDatabaseAsync(
+      "datalake_v2.db"
+    );
+
+    await database.execAsync(`
       PRAGMA journal_mode = WAL;
 
       CREATE TABLE IF NOT EXISTS attendance_records (
@@ -50,9 +61,15 @@ export async function getDb() {
         value TEXT NOT NULL
       );
     `);
-  }
 
-  return db;
+    db = database;
+
+    console.log("DATABASE INITIALIZED");
+
+    return database;
+  })();
+
+  return openingPromise;
 }
 
 export type AttendanceRow = {
