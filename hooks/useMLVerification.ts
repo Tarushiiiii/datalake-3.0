@@ -18,11 +18,11 @@ import { AppState, AppStateStatus } from "react-native";
 import {
   adaptiveQuality,
   FaceRecognitionResult,
+  BlinkDetectionResult,
   sendBlinkDetectionFrame,
   sendFaceRecognitionFrame,
   sendHeadMovementFrame,
 } from "../services/mlApi";
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type VerificationStep =
@@ -143,6 +143,7 @@ export function useMLVerification({
   const isPausedRef = useRef(false);
   const isCapturingRef = useRef(false);
   const sessionIdRef = useRef(generateUUID());
+  const previousStageRef = useRef<string | null>(null);
 
   const onSuccessRef = useRef(onSuccess);
   const onFailureRef = useRef(onFailure);
@@ -340,31 +341,58 @@ export function useMLVerification({
       },
     );
   }, [runStep, safeSetStatus]);
-
   const startBlinkDetection = useCallback(() => {
-    let blinksSoFar = 0;
-    safeSetStatus({ blinkCount: 0 });
+  safeSetStatus({
+    blinkCount: 0,
+    instruction: "Blink once",
+  });
 
-    runStep(
-      "blink_detection",
-      "Blink 2–3 times naturally",
-      sendBlinkDetectionFrame,
-      (r) => {
-        if (r.success) {
-          blinksSoFar += 1;
-          safeSetStatus({ blinkCount: blinksSoFar });
-          if (blinksSoFar === 1)
-            safeSetStatus({ instruction: "Good! Keep blinking…" });
-          else if (blinksSoFar === 2)
-            safeSetStatus({ instruction: "One more blink!" });
-        }
-        return !!r.success;
-      },
-      () => {
-        setTimeout(() => startFaceRecognition(), 500);
-      },
-    );
-  }, [runStep, startFaceRecognition, safeSetStatus]);
+  runStep(
+    "blink_detection",
+    "Blink once",
+    sendBlinkDetectionFrame,
+
+    (r) => {
+  console.log("BLINK RESPONSE", JSON.stringify(r));
+
+  safeSetStatus({
+    blinkCount: r.blink_count ?? 0,
+    instruction: r.message ?? `Blink ${r.blink_count ?? 0}/2`,
+  });
+
+  return !!r.success;
+},
+
+    () => {
+      setTimeout(() => startFaceRecognition(), 500);
+    }
+  );
+}, [runStep, startFaceRecognition, safeSetStatus]);
+
+  // const startBlinkDetection = useCallback(() => {
+  //   let blinksSoFar = 0;
+  //   safeSetStatus({ blinkCount: 0 });
+
+  //   runStep(
+  //     "blink_detection",
+  //     "Blink 2–3 times naturally",
+  //     sendBlinkDetectionFrame,
+  //     (r) => {
+  //       if (r.success) {
+  //         blinksSoFar += 1;
+  //         safeSetStatus({ blinkCount: blinksSoFar });
+  //         if (blinksSoFar === 1)
+  //           safeSetStatus({ instruction: "Good! Keep blinking…" });
+  //         else if (blinksSoFar === 2)
+  //           safeSetStatus({ instruction: "One more blink!" });
+  //       }
+  //       return !!r.success;
+  //     },
+  //     () => {
+  //       setTimeout(() => startFaceRecognition(), 500);
+  //     },
+  //   );
+  // }, [runStep, startFaceRecognition, safeSetStatus]);
 
   // ── Head Movement ──────────────────────────────────────────────────────────
   // Backend (head_movement_service.py) is a per-session state machine.
@@ -383,30 +411,55 @@ export function useMLVerification({
       STAGE_INSTRUCTIONS.look_straight,
       sendHeadMovementFrame,
       (r) => {
-        // Sync UI stage from every backend response (success or not)
-        if (r.stage) {
-          safeSetStatus({
-            headMovementStage: toUiStage(r.stage),
-            instruction: STAGE_INSTRUCTIONS[r.stage] ?? r.message ?? "",
-            stepProgress: headMovementProgress(r.stage),
-          });
-        }
-        return !!r.success;
-      },
+  if (r.stage) {
+    const instruction =
+      STAGE_INSTRUCTIONS[r.stage] ?? r.message ?? "";
+
+    // Reset timeout whenever backend advances stage
+    if (previousStageRef.current !== r.stage) {
+      previousStageRef.current = r.stage;
+
+      startStepTimeout(instruction);
+
+      console.log(
+        "[HeadMovement] Stage:",
+        r.stage,
+        "success:",
+        r.success,
+      );
+    }
+
+    safeSetStatus({
+      headMovementStage: toUiStage(r.stage),
+      instruction,
+      stepProgress: headMovementProgress(r.stage),
+    });
+  }
+  console.log(
+  "HEAD RESPONSE",
+  JSON.stringify(r)
+);
+
+  return !!r.success;
+},
       () => {
-        setTimeout(() => startBlinkDetection(), 500);
-      },
+  console.log("HEAD MOVEMENT COMPLETE");
+  setTimeout(() => startBlinkDetection(), 500);
+},
     );
   }, [runStep, startBlinkDetection, safeSetStatus]);
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
   const startVerification = useCallback(() => {
-    clearAllTimers();
-    adaptiveQuality.reset();
-    sessionIdRef.current = generateUUID();
-    startHeadMovement();
-  }, [startHeadMovement]);
+  clearAllTimers();
+  adaptiveQuality.reset();
+
+  previousStageRef.current = null;
+
+  sessionIdRef.current = generateUUID();
+  startHeadMovement();
+}, [startHeadMovement]);
 
   const reset = useCallback(() => {
     clearAllTimers();

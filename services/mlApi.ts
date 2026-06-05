@@ -21,8 +21,8 @@
  *   Railway  → "https://your-app.railway.app"
  *   ngrok    → "https://xxxx.ngrok.io"
  */
-export const BASE_URL = process.env.BASE_URL || "http://192.168.29.102:8000";
-
+export const BASE_URL = process.env.BASE_URL || "http://192.168.29.224:8000";
+console.log("ML BASE URL =", BASE_URL);
 const REQUEST_TIMEOUT_MS = 8_000;
 const MAX_SEND_RETRIES = 2;
 const BACKOFF_BASE_MS = 200;
