@@ -32,12 +32,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import BlinkEyes from "../components/blinkEyes";
+import HeadMovement from "../components/headMovement";
 import {
   useMLVerification,
   VerificationStep,
 } from "../hooks/useMLVerification";
-import HeadMovement from "../components/headMovement";
-import BlinkEyes from "../components/blinkEyes";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -333,7 +333,7 @@ export default function AttendanceCamera() {
     if (cameraReady && status.step === "idle") {
       startVerification();
     }
-  }, [cameraReady]);
+  }, [cameraReady, status.step]);
 
   if (!permission) return <View style={styles.root} />;
 

@@ -17,8 +17,6 @@ import { AppState, AppStateStatus } from "react-native";
 
 import {
   adaptiveQuality,
-  FaceRecognitionResult,
-  BlinkDetectionResult,
   sendBlinkDetectionFrame,
   sendFaceRecognitionFrame,
   sendHeadMovementFrame,
@@ -329,11 +327,9 @@ export function useMLVerification({
       "face_recognition",
       "Hold still — verifying your face",
       sendFaceRecognitionFrame,
-      // FIX: backend returns `success`, not `matched`
-      (r: FaceRecognitionResult) => !!r.success,
-      (r: FaceRecognitionResult) => {
-        // Backend score is a cosine similarity 0–1; scale to percentage for display
-        const confidence = r.score != null ? r.score * 100 : 100;
+      (r) => !!r.matched,
+      (r) => {
+        const confidence = r.confidence ?? 1;
         clearAllTimers();
         stepRef.current = "success";
         safeSetStatus({ step: "success", confidence, stepProgress: 100 });
@@ -342,57 +338,71 @@ export function useMLVerification({
     );
   }, [runStep, safeSetStatus]);
   const startBlinkDetection = useCallback(() => {
-  safeSetStatus({
-    blinkCount: 0,
-    instruction: "Blink once",
-  });
+    let blinksSoFar = 0;
 
-  runStep(
-    "blink_detection",
-    "Blink once",
-    sendBlinkDetectionFrame,
+    let prevBlink = false;
 
-    (r) => {
-  console.log("BLINK RESPONSE", JSON.stringify(r));
+    let lastBlinkTime = 0;
 
-  safeSetStatus({
-    blinkCount: r.blink_count ?? 0,
-    instruction: r.message ?? `Blink ${r.blink_count ?? 0}/2`,
-  });
+    safeSetStatus({
+      blinkCount: 0,
+      instruction: "Blink 2–3 times naturally",
+    });
 
-  return !!r.success;
-},
+    runStep(
+      "blink_detection",
 
-    () => {
-      setTimeout(() => startFaceRecognition(), 500);
-    }
-  );
-}, [runStep, startFaceRecognition, safeSetStatus]);
+      "Blink 2–3 times naturally",
 
-  // const startBlinkDetection = useCallback(() => {
-  //   let blinksSoFar = 0;
-  //   safeSetStatus({ blinkCount: 0 });
+      sendBlinkDetectionFrame,
 
-  //   runStep(
-  //     "blink_detection",
-  //     "Blink 2–3 times naturally",
-  //     sendBlinkDetectionFrame,
-  //     (r) => {
-  //       if (r.success) {
-  //         blinksSoFar += 1;
-  //         safeSetStatus({ blinkCount: blinksSoFar });
-  //         if (blinksSoFar === 1)
-  //           safeSetStatus({ instruction: "Good! Keep blinking…" });
-  //         else if (blinksSoFar === 2)
-  //           safeSetStatus({ instruction: "One more blink!" });
-  //       }
-  //       return !!r.success;
-  //     },
-  //     () => {
-  //       setTimeout(() => startFaceRecognition(), 500);
-  //     },
-  //   );
-  // }, [runStep, startFaceRecognition, safeSetStatus]);
+      (r) => {
+        const now = Date.now();
+
+        const isBlink = !!r.success;
+
+        // count ONLY on false -> true transition
+        // and apply cooldown
+        if (isBlink && !prevBlink && now - lastBlinkTime > 150) {
+          lastBlinkTime = now;
+
+          blinksSoFar += 1;
+
+          safeSetStatus({
+            blinkCount: blinksSoFar,
+          });
+
+          if (blinksSoFar === 1) {
+            safeSetStatus({
+              instruction: "Good! Keep blinking…",
+            });
+          } else if (blinksSoFar === 2) {
+            safeSetStatus({
+              instruction: "One more blink!",
+            });
+          } else if (blinksSoFar >= 3) {
+            safeSetStatus({
+              instruction: "Blinks captured!",
+              stepProgress: 100,
+            });
+
+            return true;
+          }
+        }
+
+        prevBlink = isBlink;
+
+        return false;
+      },
+
+      () => {
+        // small delay so UI shows full dots
+        setTimeout(() => {
+          startFaceRecognition();
+        }, 700);
+      },
+    );
+  }, [runStep, startFaceRecognition, safeSetStatus]);
 
   // ── Head Movement ──────────────────────────────────────────────────────────
   // Backend (head_movement_service.py) is a per-session state machine.
