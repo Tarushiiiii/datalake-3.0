@@ -306,9 +306,13 @@ export default function AttendanceCamera() {
         ]);
       } else {
         checkIn();
-        Alert.alert("Checked In ✓", `Confidence: ${confidence.toFixed(1)}%`, [
-          { text: "OK", onPress: () => router.back() },
-        ]);
+        Alert.alert(
+  "Access Granted ✓",
+  `Face Matching Confidence: ${confidence.toFixed(
+    1
+  )}%\n\nIdentity Verified Successfully`,
+  [{ text: "OK", onPress: () => router.back() }]
+);
       }
     },
     [checkIn, checkOut],
