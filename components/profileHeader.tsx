@@ -13,13 +13,14 @@ export default function ProfileHeader() {
     >
       <View style={globalStyles.profileLeft}>
         <Image
-          source={{ uri: "https://i.pravatar.cc/80?img=11" }}
+          source={require("../assets/images/profile.png")}
           style={globalStyles.avatar}
           contentFit="cover"
         />
         <View style={globalStyles.profileInfo}>
-          <Text style={globalStyles.profileName}>Rahul Sharma</Text>
-          <Text style={globalStyles.profileRole}>Field Inspector, Zone A</Text>
+          <Text style={globalStyles.profileName}>Riya Sharma</Text>
+          <Text style={globalStyles.profileRole}>Field Inspector</Text>
+          <Text style={globalStyles.profileRole}>Sector 15, Noida</Text>
           <Text style={globalStyles.profileId}>ID: EMP-8472-MX</Text>
         </View>
       </View>
