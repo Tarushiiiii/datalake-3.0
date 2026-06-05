@@ -70,52 +70,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   init: async () => {
     const db = await getDb();
-
-    // ── Backfill: create a project row for every site that has attendance
-    //    records but no matching project yet. This handles records created
-    //    before upsertProjectFromAttendance was wired into checkIn. ──────────
-    const attendanceRows = (await db.getAllAsync(
-      `SELECT DISTINCT site_name, latitude, longitude FROM attendance_records`,
-    )) as {
-      site_name: string;
-      latitude: number | null;
-      longitude: number | null;
-    }[];
-
-    for (const row of attendanceRows) {
-      const existing = await db.getFirstAsync(
-        `SELECT id FROM projects WHERE site_name = ?`,
-        [row.site_name],
-      );
-      if (!existing) {
-        const now = new Date().toISOString();
-        await db.runAsync(
-          `INSERT INTO projects
-           (id, site_name, location, latitude, longitude, assigned_hours, sync_status, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            `proj_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-            row.site_name,
-            row.site_name,
-            row.latitude ?? null,
-            row.longitude ?? null,
-            8,
-            "pending",
-            now,
-            now,
-          ],
-        );
-        console.log(
-          "[ProjectStore] backfilled project for site:",
-          row.site_name,
-        );
-      }
-    }
-
-    // ── Load all projects ─────────────────────────────────────────────────
-    const rows = (await db.getAllAsync(
-      `SELECT * FROM projects ORDER BY created_at DESC`,
-    )) as any[];
+    const rows = (await db.getAllAsync(`SELECT * FROM projects ORDER BY created_at DESC`)) as any[];
 
     set({
       projects: rows.map((p) => ({
@@ -134,29 +89,18 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   upsertProjectFromAttendance: async (payload) => {
-    // Check in-memory first (fast path)
     const exists = get().projects.find((p) => p.siteName === payload.siteName);
     if (exists) return;
 
-    // Double-check DB in case store wasn't loaded yet
     const db = await getDb();
-    const dbExists = await db.getFirstAsync(
-      `SELECT id FROM projects WHERE site_name = ?`,
-      [payload.siteName],
-    );
-    if (dbExists) {
-      // Row exists in DB but not in memory — reload
-      await get().init();
-      return;
-    }
-
     const now = new Date().toISOString();
+
     await db.runAsync(
       `INSERT INTO projects
        (id, site_name, location, latitude, longitude, assigned_hours, sync_status, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        `proj_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        `proj_${Date.now()}`,
         payload.siteName,
         payload.location,
         payload.latitude ?? null,
@@ -168,7 +112,6 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       ],
     );
 
-    console.log("[ProjectStore] created project for site:", payload.siteName);
     await get().init();
   },
 
@@ -194,13 +137,6 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     const projects = get().projects;
     const attendanceRecords = useAttendanceStore.getState().records;
 
-    console.log(
-      "[getAllProjectsWithDerived] projects:",
-      projects.length,
-      "attendance records:",
-      attendanceRecords.length,
-    );
-
     return projects.map((project) => {
       const siteSessions = attendanceRecords
         .filter((r) => r.siteName === project.siteName)
@@ -209,12 +145,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
           checkInTime: r.checkInTime,
           checkOutTime: r.checkOutTime,
           hours: r.checkOutTime
-            ? Math.round(
-                ((new Date(r.checkOutTime).getTime() -
-                  new Date(r.checkInTime).getTime()) /
-                  3_600_000) *
-                  10,
-              ) / 10
+            ? Math.round(((new Date(r.checkOutTime).getTime() - new Date(r.checkInTime).getTime()) / 3600000) * 10) / 10
             : 0,
         }));
 
@@ -227,14 +158,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         sessions: siteSessions,
         progressPercent:
           project.assignedHours > 0
-            ? Math.min(
-                100,
-                Math.round((roundedCompleted / project.assignedHours) * 100),
-              )
+            ? Math.min(100, Math.round((roundedCompleted / project.assignedHours) * 100))
             : 0,
-        remainingHours: Number(
-          Math.max(0, project.assignedHours - roundedCompleted).toFixed(1),
-        ),
+        remainingHours: Number(Math.max(0, project.assignedHours - roundedCompleted).toFixed(1)),
         status: computeStatus(roundedCompleted, project.assignedHours),
       };
     });
@@ -242,29 +168,17 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   getWeeklySummary: () => {
     const derived = get().getAllProjectsWithDerived();
-    const totalCompletedHours = derived.reduce(
-      (sum, p) => sum + p.completedHours,
-      0,
-    );
-    const totalAssignedHours = derived.reduce(
-      (sum, p) => sum + p.assignedHours,
-      0,
-    );
-    const totalRemainingHours = derived.reduce(
-      (sum, p) => sum + p.remainingHours,
-      0,
-    );
+    const totalCompletedHours = derived.reduce((sum, p) => sum + p.completedHours, 0);
+    const totalAssignedHours = derived.reduce((sum, p) => sum + p.assignedHours, 0);
+    const totalRemainingHours = derived.reduce((sum, p) => sum + p.remainingHours, 0);
 
     return {
       totalCompletedHours: Math.round(totalCompletedHours * 10) / 10,
       totalAssignedHours,
       totalRemainingHours: Math.round(totalRemainingHours * 10) / 10,
       overallProgressPercent:
-        totalAssignedHours > 0
-          ? Math.round((totalCompletedHours / totalAssignedHours) * 100)
-          : 0,
-      availableWeeklyHours:
-        Math.round((WEEKLY_HOUR_LIMIT - totalCompletedHours) * 10) / 10,
+        totalAssignedHours > 0 ? Math.round((totalCompletedHours / totalAssignedHours) * 100) : 0,
+      availableWeeklyHours: Math.round((WEEKLY_HOUR_LIMIT - totalCompletedHours) * 10) / 10,
       weeklyLimitReached: totalCompletedHours >= WEEKLY_HOUR_LIMIT,
     };
   },
