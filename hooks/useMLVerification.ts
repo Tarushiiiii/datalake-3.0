@@ -21,7 +21,6 @@ import {
   sendFaceRecognitionFrame,
   sendHeadMovementFrame,
 } from "../services/mlApi";
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type VerificationStep =
@@ -142,6 +141,7 @@ export function useMLVerification({
   const isPausedRef = useRef(false);
   const isCapturingRef = useRef(false);
   const sessionIdRef = useRef(generateUUID());
+  const previousStageRef = useRef<string | null>(null);
 
   const onSuccessRef = useRef(onSuccess);
   const onFailureRef = useRef(onFailure);
@@ -337,7 +337,6 @@ export function useMLVerification({
       },
     );
   }, [runStep, safeSetStatus]);
-
   const startBlinkDetection = useCallback(() => {
     let blinksSoFar = 0;
 
@@ -422,30 +421,55 @@ export function useMLVerification({
       STAGE_INSTRUCTIONS.look_straight,
       sendHeadMovementFrame,
       (r) => {
-        // Sync UI stage from every backend response (success or not)
-        if (r.stage) {
-          safeSetStatus({
-            headMovementStage: toUiStage(r.stage),
-            instruction: STAGE_INSTRUCTIONS[r.stage] ?? r.message ?? "",
-            stepProgress: headMovementProgress(r.stage),
-          });
-        }
-        return !!r.success;
-      },
+  if (r.stage) {
+    const instruction =
+      STAGE_INSTRUCTIONS[r.stage] ?? r.message ?? "";
+
+    // Reset timeout whenever backend advances stage
+    if (previousStageRef.current !== r.stage) {
+      previousStageRef.current = r.stage;
+
+      startStepTimeout(instruction);
+
+      console.log(
+        "[HeadMovement] Stage:",
+        r.stage,
+        "success:",
+        r.success,
+      );
+    }
+
+    safeSetStatus({
+      headMovementStage: toUiStage(r.stage),
+      instruction,
+      stepProgress: headMovementProgress(r.stage),
+    });
+  }
+  console.log(
+  "HEAD RESPONSE",
+  JSON.stringify(r)
+);
+
+  return !!r.success;
+},
       () => {
-        setTimeout(() => startBlinkDetection(), 500);
-      },
+  console.log("HEAD MOVEMENT COMPLETE");
+  setTimeout(() => startBlinkDetection(), 500);
+},
     );
   }, [runStep, startBlinkDetection, safeSetStatus]);
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
   const startVerification = useCallback(() => {
-    clearAllTimers();
-    adaptiveQuality.reset();
-    sessionIdRef.current = generateUUID();
-    startHeadMovement();
-  }, [startHeadMovement]);
+  clearAllTimers();
+  adaptiveQuality.reset();
+
+  previousStageRef.current = null;
+
+  sessionIdRef.current = generateUUID();
+  startHeadMovement();
+}, [startHeadMovement]);
 
   const reset = useCallback(() => {
     clearAllTimers();
