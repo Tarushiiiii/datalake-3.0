@@ -55,10 +55,10 @@ export interface BlinkDetectionResult {
 }
 
 export interface FaceRecognitionResult {
-  matched: boolean;
-  confidence: number;
-  user_id?: string;
-  message?: string;
+  success: boolean;
+  message: string;
+  identity?: string | null;
+  score?: number | null;
 }
 
 export type MLStep = "head_movement" | "blink_detection" | "face_recognition";
@@ -234,6 +234,7 @@ export async function sendBlinkDetectionFrame(
 /**
  * STEP 3 — Face Recognition
  * POST /face-recognition
+ * Success when backend returns success=True (cosine similarity > 0.55)
  */
 export async function sendFaceRecognitionFrame(
   base64Frame: string,

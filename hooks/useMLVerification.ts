@@ -17,6 +17,7 @@ import { AppState, AppStateStatus } from "react-native";
 
 import {
   adaptiveQuality,
+  FaceRecognitionResult,
   sendBlinkDetectionFrame,
   sendFaceRecognitionFrame,
   sendHeadMovementFrame,
@@ -327,9 +328,11 @@ export function useMLVerification({
       "face_recognition",
       "Hold still — verifying your face",
       sendFaceRecognitionFrame,
-      (r) => !!r.matched,
-      (r) => {
-        const confidence = r.confidence ?? 1;
+      // FIX: backend returns `success`, not `matched`
+      (r: FaceRecognitionResult) => !!r.success,
+      (r: FaceRecognitionResult) => {
+        // Backend score is a cosine similarity 0–1; scale to percentage for display
+        const confidence = r.score != null ? r.score * 100 : 100;
         clearAllTimers();
         stepRef.current = "success";
         safeSetStatus({ step: "success", confidence, stepProgress: 100 });
