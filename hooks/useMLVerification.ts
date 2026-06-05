@@ -340,25 +340,67 @@ export function useMLVerification({
 
   const startBlinkDetection = useCallback(() => {
     let blinksSoFar = 0;
-    safeSetStatus({ blinkCount: 0 });
+
+    let prevBlink = false;
+
+    let lastBlinkTime = 0;
+
+    safeSetStatus({
+      blinkCount: 0,
+      instruction: "Blink 2–3 times naturally",
+    });
 
     runStep(
       "blink_detection",
+
       "Blink 2–3 times naturally",
+
       sendBlinkDetectionFrame,
+
       (r) => {
-        if (r.success) {
+        const now = Date.now();
+
+        const isBlink = !!r.success;
+
+        // count ONLY on false -> true transition
+        // and apply cooldown
+        if (isBlink && !prevBlink && now - lastBlinkTime > 150) {
+          lastBlinkTime = now;
+
           blinksSoFar += 1;
-          safeSetStatus({ blinkCount: blinksSoFar });
-          if (blinksSoFar === 1)
-            safeSetStatus({ instruction: "Good! Keep blinking…" });
-          else if (blinksSoFar === 2)
-            safeSetStatus({ instruction: "One more blink!" });
+
+          safeSetStatus({
+            blinkCount: blinksSoFar,
+          });
+
+          if (blinksSoFar === 1) {
+            safeSetStatus({
+              instruction: "Good! Keep blinking…",
+            });
+          } else if (blinksSoFar === 2) {
+            safeSetStatus({
+              instruction: "One more blink!",
+            });
+          } else if (blinksSoFar >= 3) {
+            safeSetStatus({
+              instruction: "Blinks captured!",
+              stepProgress: 100,
+            });
+
+            return true;
+          }
         }
-        return !!r.success;
+
+        prevBlink = isBlink;
+
+        return false;
       },
+
       () => {
-        setTimeout(() => startFaceRecognition(), 500);
+        // small delay so UI shows full dots
+        setTimeout(() => {
+          startFaceRecognition();
+        }, 700);
       },
     );
   }, [runStep, startFaceRecognition, safeSetStatus]);
